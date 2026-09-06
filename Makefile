@@ -1,21 +1,51 @@
+PAYLOAD    ?= aoi.txt
+BOOT_ASM    = boot.asm
+BOOT_BIN    = boot.bin
+IMAGE       = boot.img
+SECTOR_SIZE = 512
+
+PAYLOAD_SECTOR_COUNT_DEFAULT = 40
+
+
+PAYLOAD_EXISTS = $(wildcard $(PAYLOAD))
+ifeq ($(PAYLOAD_EXISTS),)
+    SECTOR_COUNT = $(PAYLOAD_SECTOR_COUNT_DEFAULT)
+else
+    PAYLOAD_SIZE = $(shell stat -c%s $(PAYLOAD) 2>/dev/null || echo 0)
+    ifeq ($(PAYLOAD_SIZE),0)
+        SECTOR_COUNT = $(PAYLOAD_SECTOR_COUNT_DEFAULT)
+    else
+        SECTOR_COUNT = $(shell echo $$(( ($(PAYLOAD_SIZE) + $(SECTOR_SIZE) - 1) / $(SECTOR_SIZE) )))
+    endif
+endif
+
+
 all: run
 
-boot.bin: boot.asm
-	nasm -fbin boot.asm -o boot.bin
+$(PAYLOAD):
+	python3 generate_payload.py $(PAYLOAD) $(PAYLOAD_SECTOR_COUNT_DEFAULT)
 
-boot.img: boot.bin
-	dd if=/dev/zero of=boot.img bs=512 count=2880
-	dd if=boot.bin of=boot.img conv=notrunc
-	dd if=aoi.txt of=boot.img conv=notrunc seek=1
+$(BOOT_BIN): $(BOOT_ASM)
+	nasm -fbin -D SECTOR_COUNT=$(SECTOR_COUNT) $< -o $@
+	
+$(IMAGE): $(BOOT_BIN) $(PAYLOAD)
+	dd if=/dev/zero of=$(IMAGE) bs=$(SECTOR_SIZE) count=2880
+	dd if=$(BOOT_BIN) of=$(IMAGE) conv=notrunc
+	dd if=$(PAYLOAD) of=$(IMAGE) conv=notrunc seek=1
 
-run: boot.img
-	qemu-system-i386 -cpu pentium2 -m 1g -fda boot.img -monitor stdio -device VGA
+run: $(IMAGE)
+	qemu-system-i386 -cpu pentium2 -m 1g -fda $(IMAGE) -monitor stdio -device VGA
+
+debug: $(IMAGE)
+	qemu-system-i386 -cpu pentium2 -m 1g -fda $(IMAGE) -monitor stdio -device VGA -s -S &
+	lldb -o "gdb-remote 1234" -o "breakpoint set -a 0x7C00"
+
+check:
+	@echo "type: make"
+	@echo "then: pmemsave 0x7E00 $$(( $(SECTOR_COUNT) * $(SECTOR_SIZE) )) bar"
+	@echo "and:  cmp bar $(PAYLOAD)"
 
 clean:
-	rm -f boot.bin boot.img aoi.bin
+	rm -f $(BOOT_BIN) $(IMAGE) bar
 
-debug: boot.img
-	qemu-system-i386 -cpu pentium2 -m 1g -fda boot.img -monitor stdio -device VGA -s -S &
-	gdb -ex "target remote localhost:1234" -ex "break *0x7C00" -ex "continue"
-
-.PHONY: all run clean debug
+.PHONY: all run clean check debug
