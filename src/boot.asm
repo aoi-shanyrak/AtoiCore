@@ -18,6 +18,7 @@
 
 [BITS 16]
 
+[GLOBAL start]
 start:
     cli
     xor ax, ax

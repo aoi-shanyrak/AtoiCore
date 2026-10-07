@@ -1,1 +1,7 @@
-# Load-Kernel
+# AtoiCore
+
+a toy core 
+
+---
+
+aoi.
