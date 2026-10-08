@@ -1,22 +1,21 @@
-%ifndef SECTOR_COUNT
-    %define SECTOR_COUNT 4
-%endif
 %define SECTOR_SIZE      512
 %define SECTOR_PER_TRACK 18
 %define HEAD_COUNT       2
-%define KERNEL_OFFSET    0x7E00
+
 %define CODE_OFFSET      0x7C00
+%define KERNEL_OFFSET    0x7E00
 
 %define CODE 0x08 
 %define DATA 0x10
 
 
-[section .boot]
-
-
 ; BOOTLOADER [load kernel]
 
 [BITS 16]
+
+section .boot
+
+[EXTERN __kernel_end]
 
 [GLOBAL start]
 start:
@@ -27,12 +26,16 @@ start:
     mov ss, ax
     mov sp, CODE_OFFSET
 
+    mov eax, __kernel_end    ; it's legal!
+    sub eax, KERNEL_OFFSET
+    add eax, SECTOR_SIZE - 1
+    shr eax, 9               ; / 512
+    mov si, ax
+
     mov cl, 2
     mov ch, 0
     mov dh, 0
-
     mov bx, KERNEL_OFFSET
-    mov si, SECTOR_COUNT
 
 read_loop:
     cmp si, 0
@@ -76,6 +79,14 @@ next:
 
 [EXTERN kernel_entry]
     call CODE:kernel_entry
+    ; now we in the best place
+
+
+[BITS 16]
+
+[GLOBAL endless_loop]
+endless_loop:
+    jmp $
 
 
 gdt_descriptor:
@@ -110,11 +121,6 @@ next_sector:
     ret
 
 
-[GLOBAL endless_loop]
-endless_loop:
-    jmp $
-
-
 disk_error:
     mov  si, disk_error_msg
     call     print_string
@@ -133,8 +139,6 @@ print_string:
 
 disk_error_msg:
     db 'Disk read error!', 0x0A, 0x0D, 0
-hello_msg: 
-    db 'Hello, World!', 0x0A, 0x0D, 0
 
 
 times 510-($-$$) db 0
