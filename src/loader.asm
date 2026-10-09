@@ -9,8 +9,6 @@
 %define DATA 0x10
 
 
-; BOOTLOADER [load kernel]
-
 [BITS 16]
 
 section .boot
@@ -26,10 +24,10 @@ start:
     mov ss, ax
     mov sp, CODE_OFFSET
 
-    mov eax, __kernel_end    ; it's legal!
+    mov eax, __kernel_end    
     sub eax, KERNEL_OFFSET
     add eax, SECTOR_SIZE - 1
-    shr eax, 9               ; / 512
+    shr eax, 9               
     mov si, ax
 
     mov cl, 2
@@ -57,53 +55,6 @@ read_loop:
 
     call next_sector
     jmp read_loop
-read_done:
-
-
-; VBR [go to C]
-
-    lgdt [gdt_descriptor]
-    cld
-    mov  eax, CR0
-    or   eax, 1
-    mov  CR0, eax
-    jmp CODE:next
-[BITS 32]
-next:
-    mov ax, DATA
-    mov ss, ax
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-
-[EXTERN kernel_entry]
-    call CODE:kernel_entry
-    ; now we in the best place
-
-
-[BITS 16]
-
-[GLOBAL endless_loop]
-endless_loop:
-    jmp $
-
-
-gdt_descriptor:
-    dw gdt_end - gdt_start - 1
-    dd gdt_start
-
-;                                 P DPL S Type   G D/B L AVL limit
-; byte | 0  | 1  | 2  | 3  | 4  |      5       | 6                | 7  
-; NULL | 00 | 00 | 00 | 00 | 00 | 0 00  0 0000 | 0  0  0  0  0000 | 00
-; CODE | FF | FF | 00 | 00 | 00 | 1 00  1 1010 | 1  1  0  0  1111 | 00
-; DATA | FF | FF | 00 | 00 | 00 | 1 00  1 0010 | 1  1  0  0  1111 | 00
-gdt_start:
-    dq 0x0000000000000000
-    db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0b10011010, 0b11001111, 0x00
-    db 0xFF, 0xFF, 0x00, 0x00, 0x00, 0b10010010, 0b11001111, 0x00
-gdt_end:
-
 
 next_sector:
     inc cl
@@ -121,10 +72,60 @@ next_sector:
     ret
 
 
+read_done:
+    lgdt [gdt_descriptor]
+    cld
+    mov  eax, CR0
+    or   eax, 1
+    mov  CR0, eax
+    jmp CODE:next
+[BITS 32]
+next:
+    mov ax, DATA
+    mov ss, ax
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+
+[EXTERN kernelEntry]
+    call CODE:kernelEntry
+
+
+[BITS 16]
+
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1
+    dd gdt_start
+
+align 8
+gdt_start:
+    .null: dq 0
+    code:
+        .limitL:            dw 0xFFFF
+        .baseL:             dw 0
+        .baseM:             db 0
+        .P_DPL_S_type:      db 0b10011010
+        .G_DB_L_AVL_limitH: db 0b11001111
+        .baseH:             db 0
+    data:
+        .limitL:            dw 0xFFFF
+        .baseL:             dw 0
+        .baseM:             db 0
+        .P_DPL_S_type:      db 0b10010010
+        .G_DB_L_AVL_limitH: db 0b11001111
+        .baseH:             db 0
+gdt_end:
+
+
 disk_error:
     mov  si, disk_error_msg
     call     print_string
-    jmp      endless_loop
+
+[GLOBAL endless_loop]
+endless_loop:
+    jmp $
+
 
 print_string:
     lodsb
