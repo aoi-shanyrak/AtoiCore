@@ -41,6 +41,8 @@ fn nasmObject(
 }
 
 pub fn build(b: *std.Build) void {
+    const optimize = b.standardOptimizeOption(.{});
+
     const target = b.resolveTargetQuery(.{
         .cpu_arch = .x86,
         .os_tag = .freestanding,
@@ -53,7 +55,7 @@ pub fn build(b: *std.Build) void {
         .root_module = b.createModule(.{
             .root_source_file = srcPath(b, kernel_zig),
             .target = target,
-            .optimize = .ReleaseSmall,
+            .optimize = optimize,
             .code_model = .kernel,
         }),
     });
