@@ -89,7 +89,7 @@ next:
     mov gs, ax
 
 [EXTERN kernelEntry]
-    call CODE:kernelEntry
+    call kernelEntry
 
 
 [BITS 16]

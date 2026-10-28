@@ -15,8 +15,9 @@ const VgaWriter = struct {
     fn drain(w: *std.Io.Writer, data: []const []const u8, splat: usize) std.Io.Writer.Error!usize {
         const self: *VgaWriter = @alignCast(@fieldParentPtr("interface", w));
 
-        var total_written: usize = 0;
+        if (data.len == 0) return 0;
 
+        var total_written: usize = 0;
         for (data[0 .. data.len - 1]) |slice| {
             for (slice) |b| self.putchar(b);
             total_written += slice.len;
@@ -62,37 +63,4 @@ pub fn initPrinter() void {
 
 pub fn getWriter() *std.Io.Writer {
     return &vga_writer.interface;
-}
-
-pub fn vprintf(fmt: [*:0]const u8, args: *std.builtin.VaList) callconv(.c) void {
-    const w = getWriter();
-    var i: usize = 0;
-    while (fmt[i] != 0) : (i += 1) {
-        if (fmt[i] != '%') {
-            w.writeByte(fmt[i]) catch {};
-            continue;
-        }
-        i += 1;
-        switch (fmt[i]) {
-            'd' => w.print("{d}", .{@cVaArg(args, c_int)}) catch {},
-            'u' => w.print("{d}", .{@cVaArg(args, c_uint)}) catch {},
-            'x' => w.print("{x}", .{@cVaArg(args, c_uint)}) catch {},
-            'c' => w.writeByte(@intCast(@cVaArg(args, c_int))) catch {},
-            's' => {
-                const s = std.mem.span(@cVaArg(args, [*:0]const u8));
-                w.writeAll(s) catch {};
-            },
-            '%' => w.writeByte('%') catch {},
-            else => {
-                w.writeByte('%') catch {};
-                w.writeByte(fmt[i]) catch {};
-            },
-        }
-    }
-}
-
-pub fn printf(fmt: [*:0]const u8, ...) callconv(.c) void {
-    var ap = @cVaStart();
-    defer @cVaEnd(&ap);
-    vprintf(fmt, &ap);
 }

@@ -6,14 +6,16 @@ section .text
 [GLOBAL memcpy]
 memcpy:
     push edi
-    push si
+    push esi
+    push edi            
 
-    mov edi, [esp + 12]  
-    mov esi, [esp + 16]  
-    mov ecx, [esp + 20]  
-    rep movsb                
-    mov eax, edi         
-    
+    mov edi, [esp + 16] ; dst
+    mov esi, [esp + 20] ; src
+    mov ecx, [esp + 24] ; n
+
+    rep movsb
+
+    pop eax          
     pop esi
     pop edi
     ret

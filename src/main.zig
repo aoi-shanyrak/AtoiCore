@@ -12,31 +12,28 @@ fn panicImpl(msg: []const u8, first_trace_addr: ?usize) noreturn {
 extern fn endless_loop() noreturn;
 
 export fn kernelEntry() callconv(.c) noreturn {
-    arena.init();
+    var kernel_arena: arena.Arena = undefined;
+    kernel_arena.init();
+
     printer.initPrinter();
 
-    printer.printf("=== arena test ===\n");
-
-    const alloc = arena.allocator();
+    const alloc = kernel_arena.allocator();
+    const writer = printer.getWriter();
 
     {
-        printer.printf("\n[2] StringHashMap(u32)\n");
+        writer.print("\n[2] StringHashMap OOM test\n", .{}) catch {};
         var map = std.StringHashMap(u32).init(alloc);
 
-        map.put("one", 1) catch unreachable;
-        map.put("two", 2) catch unreachable;
-        map.put("three", 3) catch unreachable;
-        map.put("four", 4) catch unreachable;
+        var i: u32 = 0;
+        while (true) : (i += 1) {
+            const key = std.fmt.allocPrint(alloc, "key_{d}", .{i}) catch unreachable;
 
-        const keys = [_][]const u8{ "one", "two", "three", "four", "five" };
-        for (keys) |k| {
-            const v = map.get(k) orelse 0;
-            printer.printf("  %s -> %u\n", @as([*:0]const u8, @ptrCast(k.ptr)), @as(c_uint, v));
+            map.put(key, i) catch unreachable;
+
+            if (i % 10 == 0) {
+                writer.print("iter: {d}, map count: {d}\n", .{ i, map.count() }) catch {};
+            }
         }
-
-        printer.printf("count = %u\n", @as(c_uint, @intCast(map.count())));
-
-        map.deinit();
     }
 
     endless_loop();
