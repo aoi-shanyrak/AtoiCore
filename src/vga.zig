@@ -23,7 +23,7 @@ pub fn printChar(c: u8, x: usize, y: usize) void {
     VGA_BUFFER[cellOffset(x, y)] = makeEntry(c, DEFAULT_ATTR);
 }
 
-pub fn scrollDown() void {
+pub fn scrollDown() void { // TODO:
     var y: usize = 1;
     while (y < VGA_ROWS) : (y += 1) {
         var x: usize = 0;
