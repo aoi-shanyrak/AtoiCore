@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const NUM_VECTORS = @import("x86.zig").NUM_VECTORS;
+const NUM_VECTORS = @import("defs.zig").NUM_VECTORS;
 
 const STUB_INTERVAL = 30;
 const JMP_REL32_SIZE = 5;
@@ -87,4 +87,9 @@ fn isErrVector(vec: u8) bool {
         8, 10, 11, 12, 13, 14, 17, 21 => true,
         else => false,
     };
+}
+
+pub fn vectorAddr(base: usize, vec: usize) usize {
+    const k = vec / STUB_INTERVAL;
+    return base + 2 * JMP_REL32_SIZE + k * JMP_REL32_SIZE + vec * VECTOR_TRAMP_SIZE;
 }

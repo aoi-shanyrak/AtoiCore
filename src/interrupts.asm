@@ -21,6 +21,8 @@ collect_ctx:
     push gs
     pusha
 
+    cld
+
     mov ax, KERNEL_DATA_SEGMENT
     mov ds, ax
     mov es, ax
