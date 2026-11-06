@@ -5,7 +5,7 @@ extern const __kernel_end: u8;
 
 pub const ARENA1_END: usize = 0x80000;
 pub const ARENA2_START: usize = 0x100000;
-pub const ARENA2_END: usize = 0x4000000;
+pub const ARENA2_END: usize = 0x400000;
 
 pub const Arena = struct {
     arena1_ptr: usize,
@@ -49,7 +49,7 @@ pub const Arena = struct {
 
     pub fn allocUndead(self: *Arena, size: usize, alignment: usize) []u8 {
         return self.tryAllocUndead(size, alignment) catch |e| switch (e) {
-            error.OutOfMemory => panic_mod.panic(
+            error.OutOfMemory => panic_mod.panic( // TODO:
                 "arena out of memory: need {d} bytes",
                 .{size},
             ),
