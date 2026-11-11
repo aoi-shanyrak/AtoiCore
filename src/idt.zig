@@ -1,5 +1,4 @@
 const std = @import("std");
-
 const defs = @import("defs.zig");
 
 const GateType = enum(u3) {
@@ -7,7 +6,7 @@ const GateType = enum(u3) {
     trap = 0b111,
 };
 
-const IdtGate = packed struct(64) {
+const IdtGate = packed struct(u64) {
     offset_low: u16,
     segment_selector: u16,
     zero1: u8,
@@ -32,9 +31,10 @@ pub const Idt = struct {
             .offset_low = @truncate(handler_addr),
             .segment_selector = defs.KERNEL_CODE_SEGMENT,
             .zero1 = 0,
-            .type_ = if (isTrapVec(vec)) GateType.trap else GateType.interrupt,
+            .type_ = @backingInt(if (isTrapVec(vec)) GateType.trap else GateType.interrupt),
             .D = 1,
             .zero2 = 0,
+            .dpl = 0,
             .present = 1,
             .offset_high = @truncate(handler_addr >> 16),
         };

@@ -2,6 +2,7 @@ const std = @import("std");
 const arena = @import("alloc.zig");
 const printer = @import("printer.zig");
 const panic_mod = @import("panic.zig");
+const interrupts = @import("interrupts.zig");
 
 pub const panic = std.debug.FullPanic(panicImpl);
 
@@ -14,27 +15,37 @@ extern fn endless_loop() noreturn;
 export fn kernelEntry() callconv(.c) noreturn {
     var kernel_arena: arena.Arena = undefined;
     kernel_arena.init();
+    const alloc = kernel_arena.allocator();
 
     printer.initPrinter();
-
-    const alloc = kernel_arena.allocator();
     const writer = printer.getWriter();
 
-    {
-        writer.print("\n[2] StringHashMap OOM test\n", .{}) catch {};
-        var map = std.StringHashMap(u32).init(alloc);
-
-        var i: u32 = 0;
-        while (true) : (i += 1) {
-            const key = std.fmt.allocPrint(alloc, "key_{d}", .{i}) catch unreachable;
-
-            map.put(key, i) catch unreachable;
-
-            if (i % 10 == 0) {
-                writer.print("iter: {d}, map count: {d}\n", .{ i, map.count() }) catch {};
-            }
-        }
-    }
+    interrupts.setup(alloc) catch unreachable;
+    writer.writeAll("idt loaded") catch {};
 
     endless_loop();
+}
+
+const test_pattern = struct {
+    const eax = 0x00000001;
+    const ebx = 0x00000002;
+    const ecx = 0x00000003;
+    const edx = 0x00000004;
+};
+
+fn test_hardware() noreturn {
+    const asm_code = comptime std.fmt.comptimePrint(
+        \\.intel_syntax noprefix
+        \\mov eax, 0x{x}
+        \\mov ebx, 0x{x}
+        \\mov ecx, 0x{x}
+        \\mov edx, 0x{x}
+        \\sti
+        \\1: hlt
+        \\jmp 1b
+        \\.att_syntax prefix
+    , .{ test_pattern.eax, test_pattern.ebx, test_pattern.ecx, test_pattern.edx });
+
+    asm volatile (asm_code);
+    unreachable;
 }

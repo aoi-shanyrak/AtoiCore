@@ -1,6 +1,8 @@
 const std = @import("std");
+const defs = @import("defs.zig");
+const handler = @import("handler.zig");
 
-const NUM_VECTORS = @import("defs.zig").NUM_VECTORS;
+const NUM_VECTORS = defs.NUM_VECTORS;
 
 const STUB_INTERVAL = 30;
 const JMP_REL32_SIZE = 5;
@@ -50,7 +52,7 @@ pub fn genTrampolines(buffer: *[TRAMPOLINES_SIZE]u8) !void {
         try writer.writeByte(@backingInt(Opcode.push_imm8));
         try writer.writeByte(vec);
 
-        const target = if (isErrVector(vec)) err_stub_addr else last_noerr_stub_addr;
+        const target = if (handler.hasErrorCode(vec)) err_stub_addr else last_noerr_stub_addr;
         try writeJmpRel8(&writer, base + writer.end, target);
     }
     std.debug.assert(writer.end == TRAMPOLINES_SIZE);
@@ -60,14 +62,14 @@ fn writeJmpRel32(writer: *std.Io.Writer, addr: usize, target: usize) !void {
     const next_instr_addr = addr + writer.end + JMP_REL32_SIZE;
     const rel = getRel32(next_instr_addr, target);
     try writer.writeByte(@backingInt(Opcode.jmp_rel32));
-    try writer.writeAll(std.mem.asBytes(rel));
+    try writer.writeInt(i32, rel, .little);
 }
 
 fn writeJmpRel8(writer: *std.Io.Writer, addr: usize, target: usize) !void {
     const next_instr_addr = addr + writer.end + JMP_REL8_SIZE;
     const rel = getRel8(next_instr_addr, target);
     try writer.writeByte(@backingInt(Opcode.jmp_rel8));
-    try writer.writeAll(std.mem.asBytes(rel));
+    try writer.writeInt(i8, rel, .little);
 }
 
 fn getRel32(from: usize, to: usize) i32 {
@@ -80,13 +82,6 @@ fn getRel8(from: usize, to: usize) i8 {
         @panic("jmp short out of bounds");
     }
     return @intCast(diff);
-}
-
-fn isErrVector(vec: u8) bool {
-    return switch (vec) {
-        8, 10, 11, 12, 13, 14, 17, 21 => true,
-        else => false,
-    };
 }
 
 pub fn vectorAddr(base: usize, vec: usize) usize {

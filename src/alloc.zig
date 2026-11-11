@@ -49,7 +49,7 @@ pub const Arena = struct {
 
     pub fn allocUndead(self: *Arena, size: usize, alignment: usize) []u8 {
         return self.tryAllocUndead(size, alignment) catch |e| switch (e) {
-            error.OutOfMemory => panic_mod.panic( // TODO:
+            error.OutOfMemory => panic_mod.panic(
                 "arena out of memory: need {d} bytes",
                 .{size},
             ),
