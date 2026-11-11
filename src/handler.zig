@@ -33,42 +33,55 @@ pub fn hasErrorCode(vec: u32) bool {
 }
 
 export fn universal_handler(ctx: *Context) callconv(.c) void {
+    const w = panic_mod.beginPanic();
+
     var name_buf: [8]u8 = undefined;
     const int_name: []const u8 = getInterruptName(ctx.vector) orelse std.fmt.bufPrint(&name_buf, "#{d}", .{ctx.vector}) catch "ERR";
-    const err_code = if (hasErrorCode(ctx.vector)) ctx.error_code else 0;
 
-    panic_mod.panic(
-        \\unhandled interrupt {d} at 0x{x:0>4}:0x{x:0>8}
+    w.print(
+        \\unhandled interrupt {s} at 0x{x:0>4}:0x{x:0>8}
         \\
+    , .{
+        int_name,
+        ctx.cs,
+        ctx.eip,
+    }) catch {};
+
+    w.print(
         \\Registers:
         \\    EAX: 0x{x:0>8} EBX: 0x{x:0>8} ECX: 0x{x:0>8} EDX: 0x{x:0>8}
         \\    ESI: 0x{x:0>8} EDI: 0x{x:0>8} EBP: 0x{x:0>8} ESP: 0x{x:0>8}
         \\    DS : 0x{x:0>8} ES : 0x{x:0>8} FS : 0x{x:0>8} GS : 0x{x:0>8}
         \\
+    , .{
+        ctx.eax, ctx.ebx, ctx.ecx, ctx.edx, //
+        ctx.esi, ctx.edi, ctx.ebp, ctx.esp,
+        ctx.ds,  ctx.es,  ctx.fs,  ctx.gs,
+    }) catch {};
+
+    w.print(
         \\EFLAGS: 0x{x:0>8}
         \\    CF:{d} PF :{d} AF :{d} ZF:{d} 
         \\    SF:{d} TF :{d} IF :{d} DF:{d} 
         \\    OF:{d} NT :{d} RF :{d} VM:{d}
         \\    AC:{d} VIF:{d} VIP:{d} ID:{d}
         \\
-        \\Error Code: 0x{x:0>8}
-        \\
     , .{
-        int_name,
-        ctx.cs, ctx.eip, //
-        //
-        ctx.eax, ctx.ebx, ctx.ecx, ctx.edx, //
-        ctx.esi, ctx.edi, ctx.ebp, ctx.esp,
-        ctx.ds,  ctx.es,  ctx.fs,  ctx.gs,
-        //
         ctx.eflags, //
         getBit(ctx.eflags, 0),  getBit(ctx.eflags, 2),  getBit(ctx.eflags, 4),  getBit(ctx.eflags, 6), //
         getBit(ctx.eflags, 7),  getBit(ctx.eflags, 8),  getBit(ctx.eflags, 9),  getBit(ctx.eflags, 10),
         getBit(ctx.eflags, 11), getBit(ctx.eflags, 14), getBit(ctx.eflags, 16), getBit(ctx.eflags, 17),
         getBit(ctx.eflags, 18), getBit(ctx.eflags, 19), getBit(ctx.eflags, 20), getBit(ctx.eflags, 21),
-        //
-        err_code,
-    });
+    }) catch {};
+
+    if (hasErrorCode(ctx.vector)) {
+        w.print(
+            \\Error Code: 0x{x:0>8}
+            \\
+        , .{ctx.error_code}) catch {};
+    }
+
+    panic_mod.halt();
 }
 
 fn getInterruptName(vec: u32) ?[]const u8 {

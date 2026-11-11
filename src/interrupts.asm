@@ -15,6 +15,8 @@ collect_ctx_noerr:
     mov  dword [esp + 4], 0
 
 collect_ctx:
+    and dword [esp], 0x000000FF
+
     push ds
     push es
     push fs
@@ -22,7 +24,6 @@ collect_ctx:
     pusha
 
     cld
-
     mov ax, KERNEL_DATA_SEGMENT
     mov ds, ax
     mov es, ax

@@ -5,12 +5,12 @@ pub extern fn endless_loop() noreturn;
 
 var panicking: bool = false;
 
-fn halt() noreturn {
+pub fn halt() noreturn {
     asm volatile ("cli");
     endless_loop();
 }
 
-fn beginPanic() *std.Io.Writer {
+pub fn beginPanic() *std.Io.Writer {
     if (panicking) halt();
     panicking = true;
     asm volatile ("cli");

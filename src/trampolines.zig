@@ -47,13 +47,13 @@ pub fn genTrampolines(buffer: *[TRAMPOLINES_SIZE]u8) !void {
 
         if (i != 0 and i % STUB_INTERVAL == 0) {
             last_noerr_stub_addr = base + writer.end;
-            try writeJmpRel32(&writer, last_noerr_stub_addr, ctx_addr_noerr);
+            try writeJmpRel32(&writer, base, ctx_addr_noerr);
         }
         try writer.writeByte(@backingInt(Opcode.push_imm8));
         try writer.writeByte(vec);
 
         const target = if (handler.hasErrorCode(vec)) err_stub_addr else last_noerr_stub_addr;
-        try writeJmpRel8(&writer, base + writer.end, target);
+        try writeJmpRel8(&writer, base, target);
     }
     std.debug.assert(writer.end == TRAMPOLINES_SIZE);
 }

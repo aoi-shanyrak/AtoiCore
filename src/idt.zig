@@ -45,10 +45,10 @@ pub const Idt = struct {
             .limit = @sizeOf(@TypeOf(self.entries)) - 1,
             .base = @intFromPtr(&self.entries),
         };
-        asm volatile ("lidt %[ptr]"
+        asm volatile ("lidt (%[ptr])"
             :
-            : [ptr] "m" (ptr),
-        );
+            : [ptr] "r" (&ptr),
+            : .{ .memory = true });
     }
 
     fn isTrapVec(vec: u8) bool {

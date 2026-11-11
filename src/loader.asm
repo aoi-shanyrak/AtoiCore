@@ -7,6 +7,7 @@ section .boot
 extern __kernel_end
 
 global endless_loop
+global start
 
 
 start:

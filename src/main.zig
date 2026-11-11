@@ -23,6 +23,10 @@ export fn kernelEntry() callconv(.c) noreturn {
     interrupts.setup(alloc) catch unreachable;
     writer.writeAll("idt loaded") catch {};
 
+    test_exception();
+    //test_int();
+    //test_hardware();
+
     endless_loop();
 }
 
@@ -32,6 +36,37 @@ const test_pattern = struct {
     const ecx = 0x00000003;
     const edx = 0x00000004;
 };
+
+fn test_exception() noreturn {
+    const asm_code = comptime std.fmt.comptimePrint(
+        \\.intel_syntax noprefix
+        \\mov eax, 0x{x}
+        \\mov ebx, 0x{x}
+        \\mov ecx, 0x{x}
+        \\mov edx, 0x{x}
+        \\xor ecx, ecx      
+        \\div ecx           
+        \\.att_syntax prefix
+    , .{ test_pattern.eax, test_pattern.ebx, test_pattern.ecx, test_pattern.edx });
+
+    asm volatile (asm_code);
+    unreachable;
+}
+
+fn test_int() noreturn {
+    const asm_code = comptime std.fmt.comptimePrint(
+        \\.intel_syntax noprefix
+        \\mov eax, 0x{x}
+        \\mov ebx, 0x{x}
+        \\mov ecx, 0x{x}
+        \\mov edx, 0x{x}
+        \\int 167      
+        \\.att_syntax prefix
+    , .{ test_pattern.eax, test_pattern.ebx, test_pattern.ecx, test_pattern.edx });
+
+    asm volatile (asm_code);
+    unreachable;
+}
 
 fn test_hardware() noreturn {
     const asm_code = comptime std.fmt.comptimePrint(
