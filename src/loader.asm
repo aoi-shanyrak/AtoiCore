@@ -1,21 +1,15 @@
-%define SECTOR_SIZE      512
-%define SECTOR_PER_TRACK 18
-%define HEAD_COUNT       2
+%include "defs.inc"
 
-%define CODE_OFFSET      0x7C00
-%define KERNEL_OFFSET    0x7E00
-
-%define CODE 0x08 
-%define DATA 0x10
-
-
-[BITS 16]
+bits 16
 
 section .boot
 
-[EXTERN __kernel_end]
+extern __kernel_end
 
-[GLOBAL start]
+global endless_loop
+global start
+
+
 start:
     cli
     xor ax, ax
@@ -78,21 +72,21 @@ read_done:
     mov  eax, CR0
     or   eax, 1
     mov  CR0, eax
-    jmp CODE:next
-[BITS 32]
+    jmp KERNEL_CODE_SEGMENT:next
+bits 32
 next:
-    mov ax, DATA
+    mov ax, KERNEL_DATA_SEGMENT
     mov ss, ax
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
-[EXTERN kernelEntry]
+extern kernelEntry
     call kernelEntry
 
 
-[BITS 16]
+bits 16
 
 gdt_descriptor:
     dw gdt_end - gdt_start - 1
@@ -122,7 +116,7 @@ disk_error:
     mov  si, disk_error_msg
     call     print_string
 
-[GLOBAL endless_loop]
+
 endless_loop:
     jmp $
 

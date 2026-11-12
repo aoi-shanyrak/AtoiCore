@@ -5,7 +5,7 @@ extern const __kernel_end: u8;
 
 pub const ARENA1_END: usize = 0x80000;
 pub const ARENA2_START: usize = 0x100000;
-pub const ARENA2_END: usize = 0x4000000;
+pub const ARENA2_END: usize = 0x400000;
 
 pub const Arena = struct {
     arena1_ptr: usize,
