@@ -23,9 +23,9 @@ export fn kernelEntry() callconv(.c) noreturn {
     interrupts.setup(alloc) catch unreachable;
     writer.writeAll("idt loaded") catch {};
 
-    test_exception();
+    //test_exception();
     //test_int();
-    //test_hardware();
+    test_hardware();
 
     endless_loop();
 }
