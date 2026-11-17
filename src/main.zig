@@ -1,16 +1,14 @@
 const std = @import("std");
 const arena = @import("alloc.zig");
 const printer = @import("printer.zig");
-const panic_mod = @import("panic.zig");
+const kpanic = @import("panic.zig");
 const interrupts = @import("interrupts.zig");
 
-pub const panic = std.debug.FullPanic(panicImpl);
-
-fn panicImpl(msg: []const u8, first_trace_addr: ?usize) noreturn {
-    panic_mod.zigPanic(msg, first_trace_addr);
+comptime {
+    _ = @import("handler.zig");
 }
 
-extern fn endless_loop() noreturn;
+pub const panic = std.debug.FullPanic(kpanic.zigPanic);
 
 export fn kernelEntry() callconv(.c) noreturn {
     var kernel_arena: arena.Arena = undefined;
@@ -27,7 +25,7 @@ export fn kernelEntry() callconv(.c) noreturn {
     //test_int();
     test_hardware();
 
-    endless_loop();
+    kpanic.halt();
 }
 
 const test_pattern = struct {

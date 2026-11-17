@@ -1,6 +1,6 @@
 const std = @import("std");
 const defs = @import("defs.zig");
-const handler = @import("handler.zig");
+const InterruptVector = @import("interruptVector.zig").InterruptVector;
 
 const NUM_VECTORS = defs.NUM_VECTORS;
 
@@ -52,7 +52,10 @@ pub fn genTrampolines(buffer: *[TRAMPOLINES_SIZE]u8) !void {
         try writer.writeByte(@backingInt(Opcode.push_imm8));
         try writer.writeByte(vec);
 
-        const target = if (handler.hasErrorCode(vec)) err_stub_addr else last_noerr_stub_addr;
+        const target = if (@as(InterruptVector, @fromBackingInt(@intCast(vec))).hasErrorCode())
+            err_stub_addr
+        else
+            last_noerr_stub_addr;
         try writeJmpRel8(&writer, base, target);
     }
     std.debug.assert(writer.end == TRAMPOLINES_SIZE);
@@ -73,7 +76,7 @@ fn writeJmpRel8(writer: *std.Io.Writer, addr: usize, target: usize) !void {
 }
 
 fn getRel32(from: usize, to: usize) i32 {
-    return @as(i32, @intCast(to)) - @as(i32, @intCast(from));
+    return @bitCast(@as(u32, @truncate(to -% from)));
 }
 
 fn getRel8(from: usize, to: usize) i8 {

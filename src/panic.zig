@@ -1,9 +1,12 @@
 const std = @import("std");
 const printer = @import("printer.zig");
 
-pub extern fn endless_loop() noreturn;
-
 var panicking: bool = false;
+
+fn endless_loop() noreturn {
+    asm volatile ("1: jmp 1b");
+    unreachable;
+}
 
 pub fn halt() noreturn {
     asm volatile ("cli");

@@ -1,6 +1,47 @@
 const std = @import("std");
 const defs = @import("defs.zig");
-const panic_mod = @import("panic.zig");
+const panic = @import("panic.zig");
+const interruptVector = @import("interruptVector.zig");
+
+const Eflags = packed struct(u32) {
+    cf: u1,
+    _res0: u1,
+    pf: u1,
+    _res1: u1,
+    af: u1,
+    _res2: u1,
+    zf: u1,
+    sf: u1,
+    tf: u1,
+    if_: u1,
+    df: u1,
+    of: u1,
+    iopl: u2,
+    nt: u1,
+    _res3: u1,
+    rf: u1,
+    vm: u1,
+    ac: u1,
+    vif: u1,
+    vip: u1,
+    id: u1,
+    _res4: u10,
+
+    pub fn format(
+        self: Eflags,
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        try writer.print("EFLAGS: 0x{x:0>8}", .{@as(u32, @bitCast(self))});
+        try writer.print(
+            \\    CF:{d} PF :{d} AF :{d} ZF:{d} SF:{d} TF :{d} IF :{d} DF:{d} 
+            \\    OF:{d} NT :{d} RF :{d} VM:{d} AC:{d} VIF:{d} VIP:{d} ID:{d}
+            \\
+        , .{
+            self.cf, self.pf, self.af, self.zf, self.sf, self.tf,  self.if_, self.df,
+            self.of, self.nt, self.rf, self.vm, self.ac, self.vif, self.vip, self.id,
+        });
+    }
+};
 
 const Context = extern struct {
     edi: u32,
@@ -23,92 +64,55 @@ const Context = extern struct {
     eip: u32,
     cs: u32,
     eflags: u32,
-}; // TODO: printing func for {}
 
-pub fn hasErrorCode(vec: u32) bool {
-    return switch (vec) {
-        8, 10, 11, 12, 13, 14, 17, 21 => true,
-        else => false,
-    };
-}
+    pub fn format(
+        self: Context,
+        writer: *std.Io.Writer,
+    ) std.Io.Writer.Error!void {
+        const flags: Eflags = @bitCast(self.eflags);
+
+        try writer.print(
+            \\Registers:
+            \\    EAX: 0x{x:0>8} EBX: 0x{x:0>8} ECX: 0x{x:0>8} EDX: 0x{x:0>8}
+            \\    ESI: 0x{x:0>8} EDI: 0x{x:0>8} EBP: 0x{x:0>8} ESP: 0x{x:0>8}
+            \\    DS : 0x{x:0>8} ES : 0x{x:0>8} FS : 0x{x:0>8} GS : 0x{x:0>8}
+            \\
+        , .{
+            self.eax, self.ebx, self.ecx, self.edx,
+            self.esi, self.edi, self.ebp, self.esp,
+            self.ds,  self.es,  self.fs,  self.gs,
+        });
+
+        try writer.print("{f}", .{flags});
+
+        const vector: interruptVector.InterruptVector = @fromBackingInt(@intCast(@as(u8, @truncate(self.vector))));
+        if (vector.hasErrorCode()) {
+            try writer.print(
+                \\Error Code: 0x{x:0>8}
+                \\
+            , .{self.error_code});
+        }
+    }
+};
 
 export fn universal_handler(ctx: *Context) callconv(.c) void {
-    const w = panic_mod.beginPanic();
+    const w = panic.beginPanic();
 
-    var name_buf: [8]u8 = undefined;
-    const int_name: []const u8 = getInterruptName(ctx.vector) orelse std.fmt.bufPrint(&name_buf, "#{d}", .{ctx.vector}) catch "ERR";
+    const vec: u8 = @truncate(ctx.vector);
+    const vector: interruptVector.InterruptVector = @fromBackingInt(@intCast(vec));
+
+    const int_name = vector.mnemonic() orelse "ERR";
 
     w.print(
         \\unhandled interrupt {s} at 0x{x:0>4}:0x{x:0>8}
         \\
+        \\{f}
     , .{
         int_name,
         ctx.cs,
         ctx.eip,
+        ctx.*,
     }) catch {};
 
-    w.print(
-        \\Registers:
-        \\    EAX: 0x{x:0>8} EBX: 0x{x:0>8} ECX: 0x{x:0>8} EDX: 0x{x:0>8}
-        \\    ESI: 0x{x:0>8} EDI: 0x{x:0>8} EBP: 0x{x:0>8} ESP: 0x{x:0>8}
-        \\    DS : 0x{x:0>8} ES : 0x{x:0>8} FS : 0x{x:0>8} GS : 0x{x:0>8}
-        \\
-    , .{
-        ctx.eax, ctx.ebx, ctx.ecx, ctx.edx, //
-        ctx.esi, ctx.edi, ctx.ebp, ctx.esp,
-        ctx.ds,  ctx.es,  ctx.fs,  ctx.gs,
-    }) catch {};
-
-    w.print(
-        \\EFLAGS: 0x{x:0>8}
-        \\    CF:{d} PF :{d} AF :{d} ZF:{d} 
-        \\    SF:{d} TF :{d} IF :{d} DF:{d} 
-        \\    OF:{d} NT :{d} RF :{d} VM:{d}
-        \\    AC:{d} VIF:{d} VIP:{d} ID:{d}
-        \\
-    , .{
-        ctx.eflags, //
-        getBit(ctx.eflags, 0),  getBit(ctx.eflags, 2),  getBit(ctx.eflags, 4),  getBit(ctx.eflags, 6), //
-        getBit(ctx.eflags, 7),  getBit(ctx.eflags, 8),  getBit(ctx.eflags, 9),  getBit(ctx.eflags, 10),
-        getBit(ctx.eflags, 11), getBit(ctx.eflags, 14), getBit(ctx.eflags, 16), getBit(ctx.eflags, 17),
-        getBit(ctx.eflags, 18), getBit(ctx.eflags, 19), getBit(ctx.eflags, 20), getBit(ctx.eflags, 21),
-    }) catch {};
-
-    if (hasErrorCode(ctx.vector)) {
-        w.print(
-            \\Error Code: 0x{x:0>8}
-            \\
-        , .{ctx.error_code}) catch {};
-    }
-
-    panic_mod.halt();
-}
-
-fn getInterruptName(vec: u32) ?[]const u8 {
-    return switch (vec) {
-        0 => "#DE",
-        1 => "#DB",
-        3 => "#BP",
-        4 => "#OF",
-        5 => "#BR",
-        6 => "#UD",
-        7 => "#NM",
-        8 => "#DF",
-        10 => "#TS",
-        11 => "#NP",
-        12 => "#SS",
-        13 => "#GP",
-        14 => "#PF",
-        16 => "#MF",
-        17 => "#AC",
-        18 => "#MC",
-        19 => "#XM",
-        20 => "#VE",
-        21 => "#CP",
-        else => null,
-    };
-}
-
-fn getBit(val: u32, bit: u5) u1 {
-    return @intFromBool(val & (@as(u32, 1) << bit) != 0);
+    panic.halt();
 }

@@ -5,9 +5,10 @@ const std = @import("std");
 const src_dir = "src";
 
 const kernel_zig = "main.zig";
-const linker_script = "link.ld";
-const defs_zig = "defs.zig";
 const defs_inc_name = "defs.inc";
+const linker_script = "link.ld";
+
+const defs = @import("src/defs.zig");
 
 const asm_sources = [_][]const u8{
     "loader.asm",
@@ -34,34 +35,16 @@ fn objName(comptime src: []const u8) []const u8 {
 }
 
 fn generateDefsInc(b: *std.Build) []const u8 {
-    const path = src_dir ++ "/" ++ defs_zig;
-    const source = b.root.root_dir.handle.readFileAlloc(b.graph.io, path, b.allocator, .limited(8 * 1024)) catch {
-        @panic("failed to read defs.zig");
-    };
-
     var aw: std.Io.Writer.Allocating = .init(b.allocator);
     defer aw.deinit();
     const writer = &aw.writer;
 
-    var it = std.mem.splitScalar(u8, source, '\n');
-    while (it.next()) |raw_line| {
-        var line = raw_line;
-        if (std.mem.indexOf(u8, line, "//")) |idx| line = line[0..idx];
-        line = std.mem.trim(u8, line, " \t\r");
-
-        const pub_const = "pub const ";
-        if (!std.mem.startsWith(u8, line, pub_const)) continue;
-        const rest = line[pub_const.len..];
-
-        const colon = std.mem.indexOfScalar(u8, rest, ':') orelse continue;
-        const name = std.mem.trim(u8, rest[0..colon], " \t");
-
-        const eq = std.mem.indexOfScalar(u8, rest[colon..], '=') orelse continue;
-        const val_start = colon + eq + 1;
-        const semi = std.mem.indexOfScalar(u8, rest[val_start..], ';') orelse continue;
-        const value = std.mem.trim(u8, rest[val_start .. val_start + semi], " \t");
-
-        writer.print("%define {s} {s}\n", .{ name, value }) catch @panic("OOM");
+    const struct_info = @typeInfo(defs).@"struct";
+    inline for (struct_info.decl_names) |decl_name| {
+        const value = @field(defs, decl_name);
+        if (@typeInfo(@TypeOf(value)) == .int or @typeInfo(@TypeOf(value)) == .comptime_int) {
+            writer.print("%define {s} 0x{X}\n", .{ decl_name, value }) catch @panic("OOM");
+        }
     }
     return aw.toOwnedSlice() catch @panic("OOM");
 }

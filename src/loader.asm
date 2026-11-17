@@ -6,7 +6,6 @@ section .boot
 
 extern __kernel_end
 
-global endless_loop
 global start
 
 
@@ -115,9 +114,6 @@ gdt_end:
 disk_error:
     mov  si, disk_error_msg
     call     print_string
-
-
-endless_loop:
     jmp $
 
 
