@@ -2,7 +2,6 @@ const std = @import("std");
 const defs = @import("defs.zig");
 const tramp = @import("trampolines.zig");
 const idt_mod = @import("idt.zig");
-const printer = @import("printer.zig");
 
 pub fn setup(allocator: std.mem.Allocator) !void {
     const tramps_buf = try allocator.alloc(u8, tramp.TRAMPOLINES_SIZE);

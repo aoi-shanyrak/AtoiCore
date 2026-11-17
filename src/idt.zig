@@ -51,7 +51,7 @@ pub const Idt = struct {
             : .{ .memory = true });
     }
 
-    fn isTrapVec(vec: u8) bool {
+    fn isTrapVec(vec: u8) bool { // TODO:
         return switch (vec) {
             3, 4 => true,
             else => false,

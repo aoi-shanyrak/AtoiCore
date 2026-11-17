@@ -23,7 +23,7 @@ const Context = extern struct {
     eip: u32,
     cs: u32,
     eflags: u32,
-};
+}; // TODO: printing func for {}
 
 pub fn hasErrorCode(vec: u32) bool {
     return switch (vec) {
