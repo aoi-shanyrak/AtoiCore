@@ -39,11 +39,13 @@ fn generateDefsInc(b: *std.Build) []const u8 {
     defer aw.deinit();
     const writer = &aw.writer;
 
-    const struct_info = @typeInfo(defs).@"struct";
-    inline for (struct_info.decl_names) |decl_name| {
-        const value = @field(defs, decl_name);
-        if (@typeInfo(@TypeOf(value)) == .int or @typeInfo(@TypeOf(value)) == .comptime_int) {
-            writer.print("%define {s} 0x{X}\n", .{ decl_name, value }) catch @panic("OOM");
+    inline for (comptime std.meta.declarations(defs)) |declname| {
+        const value = @field(defs, declname);
+        switch (@typeInfo(@TypeOf(value))) {
+            .int, .comptime_int => {
+                writer.print("%define {s} 0x{X}\n", .{ declname, value }) catch @panic("OOM");
+            },
+            else => {},
         }
     }
     return aw.toOwnedSlice() catch @panic("OOM");

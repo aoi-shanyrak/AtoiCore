@@ -13,7 +13,7 @@ const Eflags = packed struct(u32) {
     zf: u1,
     sf: u1,
     tf: u1,
-    if_: u1,
+    @"if": u1,
     df: u1,
     of: u1,
     iopl: u2,
@@ -37,8 +37,8 @@ const Eflags = packed struct(u32) {
             \\    OF:{d} NT :{d} RF :{d} VM:{d} AC:{d} VIF:{d} VIP:{d} ID:{d}
             \\
         , .{
-            self.cf, self.pf, self.af, self.zf, self.sf, self.tf,  self.if_, self.df,
-            self.of, self.nt, self.rf, self.vm, self.ac, self.vif, self.vip, self.id,
+            self.cf, self.pf, self.af, self.zf, self.sf, self.tf,  self.@"if", self.df,
+            self.of, self.nt, self.rf, self.vm, self.ac, self.vif, self.vip,   self.id,
         });
     }
 };
