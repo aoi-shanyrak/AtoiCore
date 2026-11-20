@@ -1,4 +1,10 @@
+const GateType = enum(u3) {
+    interrupt = 0b110,
+    trap = 0b111,
+};
+
 pub const InterruptVector = enum(u8) {
+    // CPU
     divide_error = 0,
     debug = 1,
     nmi = 2,
@@ -21,6 +27,10 @@ pub const InterruptVector = enum(u8) {
     simd_floating_point = 19,
     virtualization = 20,
     control_protection = 21,
+    // PIC
+    timer = 32,
+    keyboard = 33,
+    pic_cascade = 34,
     _,
 
     pub fn hasErrorCode(self: InterruptVector) bool {
@@ -38,6 +48,22 @@ pub const InterruptVector = enum(u8) {
         };
     }
 
+    pub fn gateType(self: InterruptVector) GateType {
+        return switch (self) {
+            .breakpoint, .overflow => .trap,
+            else => .interrupt,
+        };
+    }
+
+    pub fn isPicIrq(self: InterruptVector) bool {
+        const v: u8 = @backingInt(self);
+        return v >= 32 and v < 48;
+    }
+
+    pub fn picIrqNum(self: InterruptVector) u8 {
+        return @as(u8, @fromBackingInt(@intCast(self))) - 32;
+    }
+
     pub fn mnemonic(self: InterruptVector) ?*const [3:0]u8 {
         return switch (self) {
             .divide_error => "#DE",
@@ -45,7 +71,7 @@ pub const InterruptVector = enum(u8) {
             .nmi => null,
             .breakpoint => "#BP",
             .overflow => "#OF",
-            .bound_range => "#BP",
+            .bound_range => "#BR",
             .invalid_opcode => "#UD",
             .device_not_available => "#NM",
             .double_fault => "#DF",

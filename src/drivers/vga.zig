@@ -1,5 +1,4 @@
 const std = @import("std");
-const mem = @import("mem.zig");
 
 pub const VGA_COLUMNS = 80;
 pub const VGA_ROWS = 25;
@@ -27,11 +26,9 @@ pub fn printChar(c: u8, x: usize, y: usize) void {
 pub fn scrollDown() void {
     var y: usize = 1;
     while (y < VGA_ROWS) : (y += 1) {
-        _ = mem.memcpy( //
-            @ptrCast(@volatileCast(&VGA_BUFFER[cellOffset(0, y - 1)])), //
-            @ptrCast(@volatileCast(&VGA_BUFFER[cellOffset(0, y)])), //
-            VGA_COLUMNS * @sizeOf(u16) //
-        );
+        const dst: [*]u16 = @ptrCast(@volatileCast(&VGA_BUFFER[cellOffset(0, y - 1)]));
+        const src: [*]const u16 = @ptrCast(@volatileCast(&VGA_BUFFER[cellOffset(0, y)]));
+        @memcpy(dst[0..VGA_COLUMNS], src[0..VGA_COLUMNS]);
     }
     var x: usize = 0;
     while (x < VGA_COLUMNS) : (x += 1) {
