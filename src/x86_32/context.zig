@@ -1,6 +1,6 @@
 const std = @import("std");
-const panic = @import("panic.zig");
-const interruptVector = @import("interruptVector.zig");
+
+const InterruptVector = @import("interruptVector.zig").InterruptVector;
 
 const Eflags = packed struct(u32) {
     cf: u1,
@@ -30,7 +30,7 @@ const Eflags = packed struct(u32) {
         self: Eflags,
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
-        try writer.print("EFLAGS: 0x{x:0>8}", .{@as(u32, @bitCast(self))});
+        try writer.print("EFLAGS: 0x{x:0>8}\n", .{@as(u32, @bitCast(self))});
         try writer.print(
             \\    CF:{d} PF :{d} AF :{d} ZF:{d} SF:{d} TF :{d} IF :{d} DF:{d} 
             \\    OF:{d} NT :{d} RF :{d} VM:{d} AC:{d} VIF:{d} VIP:{d} ID:{d}
@@ -42,7 +42,7 @@ const Eflags = packed struct(u32) {
     }
 };
 
-const Context = extern struct {
+pub const Context = extern struct {
     edi: u32,
     esi: u32,
     ebp: u32,
@@ -82,7 +82,7 @@ const Context = extern struct {
 
         try writer.print("{f}", .{self.eflags});
 
-        const vector: interruptVector.InterruptVector = @fromBackingInt(@intCast(@as(u8, @truncate(self.vector))));
+        const vector: InterruptVector = @fromBackingInt(@intCast(@as(u8, @truncate(self.vector))));
         if (vector.hasErrorCode()) {
             try writer.print(
                 \\Error Code: 0x{x:0>8}
@@ -91,25 +91,3 @@ const Context = extern struct {
         }
     }
 };
-
-export fn universal_handler(ctx: *Context) callconv(.c) void {
-    const w = panic.beginPanic();
-
-    const vec: u8 = @truncate(ctx.vector);
-    const vector: interruptVector.InterruptVector = @fromBackingInt(@intCast(vec));
-
-    const int_name = vector.mnemonic() orelse "ERR";
-
-    w.print(
-        \\unhandled interrupt {s} at 0x{x:0>4}:0x{x:0>8}
-        \\
-        \\{f}
-    , .{
-        int_name,
-        ctx.cs,
-        ctx.eip,
-        ctx.*,
-    }) catch {};
-
-    panic.halt();
-}
