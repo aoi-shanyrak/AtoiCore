@@ -1,8 +1,12 @@
 const std = @import("std");
-const arena = @import("alloc.zig");
+const x86 = @import("x86_32");
+const kpanic = @import("panic");
 const printer = @import("printer.zig");
-const kpanic = @import("panic.zig");
-const interrupts = @import("interrupts.zig");
+
+const allocator_undead = @import("memory").arena;
+
+const pic = x86.pic;
+const interrupts = x86.interrupts;
 
 comptime {
     _ = @import("handler.zig");
@@ -11,21 +15,29 @@ comptime {
 pub const panic = std.debug.FullPanic(kpanic.zigPanic);
 
 export fn kernelEntry() callconv(.c) noreturn {
-    var kernel_arena: arena.Arena = undefined;
+    const alloc = kernelSetup();
+    _ = main(alloc);
+    kpanic.halt();
+}
+
+fn kernelSetup() std.mem.Allocator {
+    var kernel_arena: allocator_undead.Arena = undefined;
     kernel_arena.init();
     const alloc = kernel_arena.allocator();
 
     printer.initPrinter();
-    const writer = printer.getWriter();
+    kpanic.setWriter(printer.getWriter());
 
-    interrupts.setup(alloc) catch unreachable;
-    writer.writeAll("idt loaded") catch {};
+    interrupts.setup(alloc, .{}) catch unreachable;
 
-    //test_exception();
-    //test_int();
-    test_hardware();
+    return alloc;
+}
 
-    kpanic.halt();
+fn main(_: std.mem.Allocator) i32 {
+    test_exception();
+    //test_hardware();
+
+    return 0;
 }
 
 const test_pattern = struct {
@@ -44,21 +56,6 @@ fn test_exception() noreturn {
         \\mov edx, 0x{x}
         \\xor ecx, ecx      
         \\div ecx           
-        \\.att_syntax prefix
-    , .{ test_pattern.eax, test_pattern.ebx, test_pattern.ecx, test_pattern.edx });
-
-    asm volatile (asm_code);
-    unreachable;
-}
-
-fn test_int() noreturn {
-    const asm_code = comptime std.fmt.comptimePrint(
-        \\.intel_syntax noprefix
-        \\mov eax, 0x{x}
-        \\mov ebx, 0x{x}
-        \\mov ecx, 0x{x}
-        \\mov edx, 0x{x}
-        \\int 167      
         \\.att_syntax prefix
     , .{ test_pattern.eax, test_pattern.ebx, test_pattern.ecx, test_pattern.edx });
 

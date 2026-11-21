@@ -1,5 +1,5 @@
 const std = @import("std");
-const vga = @import("vga.zig");
+const vga = @import("drivers").vga;
 
 const TOP: usize = 0;
 const BOTTOM: usize = vga.VGA_ROWS - 1;

@@ -2,8 +2,9 @@ const std = @import("std");
 const defs = @import("defs.zig");
 const trampolines = @import("trampolines.zig");
 const idt = @import("idt.zig");
+const pic = @import("pic.zig");
 
-pub fn setup(allocator: std.mem.Allocator) !void {
+pub fn setup(allocator: std.mem.Allocator, pic_cfg: pic.Config) !void {
     const tramps_buf = try allocator.alloc(u8, trampolines.TRAMPOLINES_SIZE);
     const tramps: *[trampolines.TRAMPOLINES_SIZE]u8 = @ptrCast(tramps_buf.ptr);
     try trampolines.genTrampolines(tramps);
@@ -15,4 +16,6 @@ pub fn setup(allocator: std.mem.Allocator) !void {
         idt_ptr.setGate(@intCast(i), trampolines.vectorAddr(base, i));
     }
     idt_ptr.load();
+
+    pic.init(pic_cfg);
 }
