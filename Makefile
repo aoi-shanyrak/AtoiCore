@@ -30,4 +30,5 @@ debug: $(IMAGE)
 	lldb -o "gdb-remote 1234" -o "breakpoint set -a 0x7C00"
 
 clean:
-	rm -rf build zig-out .zig-cache
+	rm -rf zig-out .zig-cache
+	
