@@ -1,4 +1,16 @@
-%include "defs.inc"
+%define SECTOR_SIZE 512
+%define SECTOR_PER_TRACK 18
+%define HEAD_COUNT 2
+
+%define CODE_OFFSET 0x7C00
+%define KERNEL_OFFSET 0x7E00
+
+KERNEL_CODE_SEGMENT equ code - gdt_start
+KERNEL_DATA_SEGMENT equ data - gdt_start
+
+global KERNEL_CODE_SEGMENT
+global KERNEL_DATA_SEGMENT
+
 
 bits 16
 

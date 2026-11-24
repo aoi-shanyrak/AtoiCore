@@ -1,8 +1,7 @@
 const std = @import("std");
-const defs = @import("defs.zig");
 const InterruptVector = @import("interruptVector.zig").InterruptVector;
 
-const NUM_VECTORS = defs.NUM_VECTORS;
+const NUM_VECTORS = @import("idt.zig").NUM_VECTORS;
 
 const STUB_INTERVAL = 30;
 const JMP_REL32_SIZE = 5;

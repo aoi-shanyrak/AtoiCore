@@ -1,10 +1,9 @@
-%include "defs.inc"
-
 bits 32
 
 section .text
 
 extern universal_handler
+extern KERNEL_DATA_SEGMENT
 
 global collect_ctx
 global collect_ctx_noerr

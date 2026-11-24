@@ -4,8 +4,9 @@ const printer = @import("printer.zig");
 var panicking: bool = false;
 
 fn endless_loop() noreturn {
-    asm volatile ("1: jmp 1b");
-    unreachable;
+    while (true) {
+        asm volatile ("");
+    }
 }
 
 pub fn halt() noreturn {

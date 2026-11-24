@@ -1,5 +1,4 @@
 const std = @import("std");
-const defs = @import("defs.zig");
 const panic = @import("panic.zig");
 const interruptVector = @import("interruptVector.zig");
 
@@ -63,14 +62,12 @@ const Context = extern struct {
 
     eip: u32,
     cs: u32,
-    eflags: u32,
+    eflags: Eflags,
 
     pub fn format(
         self: Context,
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
-        const flags: Eflags = @bitCast(self.eflags);
-
         try writer.print(
             \\Registers:
             \\    EAX: 0x{x:0>8} EBX: 0x{x:0>8} ECX: 0x{x:0>8} EDX: 0x{x:0>8}
@@ -83,7 +80,7 @@ const Context = extern struct {
             self.ds,  self.es,  self.fs,  self.gs,
         });
 
-        try writer.print("{f}", .{flags});
+        try writer.print("{f}", .{self.eflags});
 
         const vector: interruptVector.InterruptVector = @fromBackingInt(@intCast(@as(u8, @truncate(self.vector))));
         if (vector.hasErrorCode()) {

@@ -1,5 +1,8 @@
 const std = @import("std");
-const defs = @import("defs.zig");
+
+pub const NUM_VECTORS: u32 = 256;
+
+const kernel_code_segment = @extern(*const anyopaque, .{ .name = "KERNEL_CODE_SEGMENT" });
 
 const GateType = enum(u3) {
     interrupt = 0b110,
@@ -24,12 +27,12 @@ const IdtPtr = packed struct {
 };
 
 pub const Idt = struct {
-    entries: [defs.NUM_VECTORS]IdtGate,
+    entries: [NUM_VECTORS]IdtGate,
 
     pub fn setGate(self: *Idt, vec: u8, handler_addr: usize) void {
         self.entries[vec] = .{
             .offset_low = @truncate(handler_addr),
-            .segment_selector = defs.KERNEL_CODE_SEGMENT,
+            .segment_selector = @truncate(@intFromPtr(kernel_code_segment)),
             .zero1 = 0,
             .type = @backingInt(if (isTrapVec(vec)) GateType.trap else GateType.interrupt),
             .D = 1,
