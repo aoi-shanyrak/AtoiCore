@@ -35,3 +35,23 @@ pub const Context = struct {
         };
     }
 };
+
+pub const qemu_bin = "qemu-system-i386";
+
+pub const qemu_args = [_][]const u8{
+    "-cpu",
+    "pentium2",
+    "-m",
+    "1g",
+    "-no-reboot",
+    "-monitor",
+    "stdio",
+    "-device",
+    "VGA",
+    "-fda",
+};
+
+pub const clean_dirs = [_][]const u8{
+    "zig-out/",
+    ".zig-cache/",
+};
