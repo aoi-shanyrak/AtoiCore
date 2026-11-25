@@ -24,7 +24,7 @@ const IdtPtr = packed struct {
 };
 
 pub const Idt = struct {
-    entries: [NUM_VECTORS]IdtGate,
+    entries: [NUM_VECTORS]IdtGate align(16),
 
     pub fn setGate(self: *Idt, vec: u8, handler_addr: usize) void {
         const vector: InterruptVector = @fromBackingInt(@intCast(vec));
