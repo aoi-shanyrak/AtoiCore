@@ -1,6 +1,10 @@
+pub const pic = @import("pic.zig");
+
+pub const Context = @import("context.zig").Context;
+pub const InterruptVector = @import("interruptVector.zig").InterruptVector;
+
 const std = @import("std");
 const idt = @import("idt.zig");
-const pic = @import("pic.zig");
 const handler = @import("handler.zig");
 const trampolines = @import("trampolines.zig");
 
@@ -9,7 +13,7 @@ comptime {
 }
 
 pub fn setup(allocator: std.mem.Allocator, pic_cfg: pic.Config) !void {
-    handler.init(allocator);
+    try handler.init(allocator);
 
     const tramps = try trampolines.Trampolines.init(allocator);
     const idt_ptr = try allocator.create(idt.Idt);

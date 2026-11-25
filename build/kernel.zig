@@ -4,14 +4,14 @@ const config = @import("config.zig");
 pub fn createKernelModules(ctx: config.Context) *std.Build.Module {
     const panic_mod = module(ctx, "src/kernel/panic.zig", &.{});
     const drivers_mod = module(ctx, "src/drivers/drivers.zig", &.{});
-    const int_mod = module(ctx, "src/interrupt/interrupt.zig", &.{
+    const int_mod = module(ctx, "src/interrupts/interrupts.zig", &.{
         .{ .name = "panic", .module = panic_mod },
     });
 
     return module(ctx, "src/kernel/main.zig", &.{
         .{ .name = "panic", .module = panic_mod },
         .{ .name = "drivers", .module = drivers_mod },
-        .{ .name = "interrupt", .module = int_mod },
+        .{ .name = "interrupts", .module = int_mod },
     });
 }
 

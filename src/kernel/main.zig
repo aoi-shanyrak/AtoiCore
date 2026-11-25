@@ -1,12 +1,11 @@
 const std = @import("std");
-const interrupt = @import("interrupt");
+const interrupts = @import("interrupts");
 const kpanic = @import("panic");
 const printer = @import("printer.zig");
 
 const allocator_undead = @import("arena.zig");
 
-const pic = interrupt.pic;
-const interrupts = interrupt.interrupts;
+const pic = interrupts.pic;
 
 pub const panic = std.debug.FullPanic(kpanic.zigPanic);
 

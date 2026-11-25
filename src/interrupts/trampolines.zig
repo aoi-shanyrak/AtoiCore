@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const InterruptVector = @import("interruptVector.zig").InterruptVector;
 
 const NUM_VECTORS = @import("idt.zig").NUM_VECTORS;
@@ -52,17 +53,17 @@ pub fn emitTrampolines(
     noerr_target: usize,
 ) !void {
     const err_stub_addr = base;
-    try writeJmpRel32(&writer, err_stub_addr, err_target);
+    try writeJmpRel32(writer, err_stub_addr, err_target);
 
     var last_noerr_stub_addr = base + writer.end;
-    try writeJmpRel32(&writer, last_noerr_stub_addr, noerr_target);
+    try writeJmpRel32(writer, last_noerr_stub_addr, noerr_target);
 
     for (0..NUM_VECTORS) |i| {
         const vec: u8 = @intCast(i);
 
         if (i != 0 and i % STUB_INTERVAL == 0) {
             last_noerr_stub_addr = base + writer.end;
-            try writeJmpRel32(&writer, base, noerr_target);
+            try writeJmpRel32(writer, base, noerr_target);
         }
         try writer.writeByte(@backingInt(Opcode.push_imm8));
         try writer.writeByte(vec);
@@ -71,7 +72,7 @@ pub fn emitTrampolines(
             err_stub_addr
         else
             last_noerr_stub_addr;
-        try writeJmpRel8(&writer, base, target);
+        try writeJmpRel8(writer, base, target);
     }
 }
 
@@ -102,6 +103,7 @@ fn getRel8(from: usize, to: usize) i8 {
 }
 
 comptime {
+    @setEvalBranchQuota(10_000);
     var dummy: [TRAMPOLINES_SIZE]u8 = undefined;
     var writer = std.Io.Writer.fixed(&dummy);
     emitTrampolines(&writer, 0x1000, 0x2000, 0x3000) catch @compileError("trampoline buffer overflow");

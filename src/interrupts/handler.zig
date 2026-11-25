@@ -1,17 +1,15 @@
 const std = @import("std");
-const defs = @import("defs.zig");
+const idt = @import("idt.zig");
+const pic = @import("pic.zig");
 const panic = @import("panic");
-const interrupt = @import("interrupt.zig");
 
-const pic = interrupt.pic;
-
-const Context = interrupt.Context;
-const InterruptVector = interrupt.InterruptVector;
+const Context = @import("context.zig").Context;
+const InterruptVector = @import("interruptVector.zig").InterruptVector;
 
 pub const HandlerFn = *const fn (ctx: *Context) void;
 
 pub const HandlerTable = struct {
-    entries: [defs.NUM_VECTORS]?HandlerFn,
+    entries: [idt.NUM_VECTORS]?HandlerFn,
 
     pub fn init(allocator: std.mem.Allocator) !*HandlerTable {
         const self = try allocator.create(HandlerTable);
@@ -20,11 +18,11 @@ pub const HandlerTable = struct {
     }
 
     pub fn register(self: *HandlerTable, vec: InterruptVector, handler: HandlerFn) void {
-        self.entries[@fromBackingInt(@intCast(vec))] = handler;
+        self.entries[@backingInt(vec)] = handler;
     }
 
     pub fn get(self: *HandlerTable, vec: InterruptVector) ?HandlerFn {
-        return self.entries[@fromBackingInt(@intCast(vec))];
+        return self.entries[@backingInt(vec)];
     }
 };
 

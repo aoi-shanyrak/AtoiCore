@@ -10,7 +10,7 @@ pub const img_name = "os.img";
 
 pub const asm_sources = [_][]const u8{
     "src/kernel/boot/loader.asm",
-    "src/interrupt/interrupts.asm",
+    "src/interrupts/collectCtx.asm",
 };
 
 pub const sector_size: usize = 512;
