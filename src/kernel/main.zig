@@ -1,11 +1,10 @@
 const std = @import("std");
-const interrupts = @import("interrupts");
 const kpanic = @import("panic");
+const drivers = @import("drivers");
 const printer = @import("printer.zig");
+const interrupts = @import("interrupts");
 
 const allocator_undead = @import("arena.zig");
-
-const pic = interrupts.pic;
 
 pub const panic = std.debug.FullPanic(kpanic.zigPanic);
 
@@ -23,7 +22,9 @@ fn kernelSetup() std.mem.Allocator {
     printer.initPrinter();
     kpanic.setWriter(printer.getWriter());
 
-    interrupts.setup(alloc, .{}) catch unreachable;
+    interrupts.setup(alloc) catch unreachable;
+
+    drivers.pit.init(100) catch unreachable;
 
     return alloc;
 }

@@ -32,6 +32,12 @@ pub fn init(alloc: std.mem.Allocator) !void {
     table = try HandlerTable.init(alloc);
 }
 
+pub fn register(vec: InterruptVector, handler: HandlerFn) void {
+    if (table) |t| {
+        t.register(vec, handler);
+    }
+}
+
 export fn universal_handler(ctx: *Context) callconv(.c) void {
     const vec: u8 = @truncate(ctx.vector);
     const vector: InterruptVector = @fromBackingInt(@intCast(vec));
@@ -39,8 +45,8 @@ export fn universal_handler(ctx: *Context) callconv(.c) void {
     if (table) |t| {
         if (t.get(vector)) |handler| {
             handler(ctx);
-            if (vector.isPicIrq()) {
-                pic.sendEOI(vec);
+            if (vector.toPicIrq()) |irq| {
+                pic.sendEOI(@backingInt(irq));
             }
             return;
         }

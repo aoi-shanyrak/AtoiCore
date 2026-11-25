@@ -1,10 +1,25 @@
+const io = @import("io");
+const std = @import("std");
+
+const EOI: u8 = 0x20;
+
 const MASTER_CMD_PORT: u16 = 0x20;
 const MASTER_DATA_PORT: u16 = 0x21;
 const SLAVE_CMD_PORT: u16 = 0xA0;
 const SLAVE_DATA_PORT: u16 = 0xA1;
 
-const MASTER_VECTOR_OFFSET: u8 = 32;
-const SLAVE_VECTOR_OFFSET: u8 = 40;
+pub const MASTER_VECTOR_OFFSET: u8 = 32;
+pub const SLAVE_VECTOR_OFFSET: u8 = 40;
+
+pub const IRQ_COUNT: u8 = 16;
+pub const LINES_PER_PIC: u8 = 8;
+
+pub const Irq = enum(u4) {
+    timer = 0,
+    keyboard = 1,
+    cascade = 2,
+    _,
+};
 
 const Icw1 = packed struct(u8) {
     icw4_needed: bool = true,
@@ -23,7 +38,7 @@ const Icw4 = packed struct(u8) {
 };
 
 pub const Config = struct {
-    irq_mask: u16 = 0b0000000000000011,
+    irq_mask: u16 = 0,
     aeoi: bool = false,
 };
 
@@ -47,42 +62,48 @@ pub fn init(cfg: Config) void {
     send(MASTER_DATA_PORT, icw4);
     send(SLAVE_DATA_PORT, icw4);
 
-    var mask: u16 = ~cfg.irq_mask;
+    var irq_mask: u16 = ~cfg.irq_mask;
     if ((cfg.irq_mask & 0xFF00) != 0)
-        mask &= ~(@as(u16, 1) << 2);
-    send(MASTER_DATA_PORT, @truncate(mask));
-    send(SLAVE_DATA_PORT, @truncate(mask >> 8));
+        irq_mask &= ~(@as(u16, 1) << 2);
+    send(MASTER_DATA_PORT, @truncate(irq_mask));
+    send(SLAVE_DATA_PORT, @truncate(irq_mask >> 8));
 }
 
 inline fn send(port: u16, val: u8) void {
-    outb(port, val);
-    ioWait();
+    io.outb(port, val);
+    io.wait();
 }
 
-inline fn ioWait() void {
-    outb(0x80, 0);
-}
-
-pub inline fn inb(port: u16) u8 {
-    return asm volatile ("inb %[port], %[ret]"
-        : [ret] "={al}" (-> u8),
-        : [port] "{dx}" (port),
-    );
-}
-
-pub inline fn outb(port: u16, val: u8) void {
-    asm volatile ("outb %[val], %[port]"
-        :
-        : [val] "{al}" (val),
-          [port] "{dx}" (port),
-    );
-}
-
-pub fn sendEOI(irq: u8) void {
+pub fn sendEOI(vec: u8) void {
     if (cur_cfg.aeoi) return;
 
-    const eoi: u8 = 0x20;
-    if (irq >= 8)
-        send(SLAVE_CMD_PORT, eoi);
-    send(MASTER_CMD_PORT, eoi);
+    const irq = vec - MASTER_VECTOR_OFFSET;
+    if (irq >= LINES_PER_PIC)
+        send(SLAVE_CMD_PORT, EOI);
+    send(MASTER_CMD_PORT, EOI);
+}
+
+pub fn mask(irq: Irq) void {
+    const line = @backingInt(irq);
+    if (line < LINES_PER_PIC) {
+        const bit: u8 = @as(u8, 1) << @intCast(line);
+        send(MASTER_DATA_PORT, io.inb(MASTER_DATA_PORT) | bit);
+    } else {
+        const bit: u8 = @as(u8, 1) << @intCast(LINES_PER_PIC - line);
+        send(SLAVE_DATA_PORT, io.inb(SLAVE_DATA_PORT) | bit);
+    }
+}
+
+pub fn unmask(irq: Irq) void {
+    const line = @backingInt(irq);
+    if (line < LINES_PER_PIC) {
+        const bit: u8 = @as(u8, 1) << @intCast(line);
+        send(MASTER_DATA_PORT, io.inb(MASTER_DATA_PORT) & ~bit);
+    } else {
+        const cascade_bit: u8 = @as(u8, 1) << @backingInt(Irq.cascade);
+        send(MASTER_DATA_PORT, io.inb(MASTER_DATA_PORT) & ~cascade_bit);
+
+        const bit: u8 = @as(u8, 1) << @intCast(LINES_PER_PIC - line);
+        send(SLAVE_DATA_PORT, io.inb(SLAVE_DATA_PORT) & ~bit);
+    }
 }

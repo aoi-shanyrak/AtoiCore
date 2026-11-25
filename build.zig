@@ -12,6 +12,9 @@ pub fn build(b: *std.Build) void {
     const os_elf = kernel.addKernelElf(b, kernel_mod);
     @"asm".addAssemblyObjects(b, os_elf);
 
+    const check = b.step("check", "Check if kernel compiles");
+    check.dependOn(&os_elf.step);
+
     const os_bin = b.addObjCopy(os_elf.getEmittedBin(), .{ .format = .binary });
     const os_img = image.addFloppyImage(b, os_bin.getOutput());
 

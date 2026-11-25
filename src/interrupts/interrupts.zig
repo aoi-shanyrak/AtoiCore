@@ -1,18 +1,14 @@
 pub const pic = @import("pic.zig");
+pub const handler = @import("handler.zig");
 
 pub const Context = @import("context.zig").Context;
 pub const InterruptVector = @import("interruptVector.zig").InterruptVector;
 
 const std = @import("std");
 const idt = @import("idt.zig");
-const handler = @import("handler.zig");
 const trampolines = @import("trampolines.zig");
 
-comptime {
-    _ = @import("handler.zig");
-}
-
-pub fn setup(allocator: std.mem.Allocator, pic_cfg: pic.Config) !void {
+pub fn setup(allocator: std.mem.Allocator) !void {
     try handler.init(allocator);
 
     const tramps = try trampolines.Trampolines.init(allocator);
@@ -23,5 +19,5 @@ pub fn setup(allocator: std.mem.Allocator, pic_cfg: pic.Config) !void {
     }
     idt_ptr.load();
 
-    pic.init(pic_cfg);
+    pic.init(.{});
 }
