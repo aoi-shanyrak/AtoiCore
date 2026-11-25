@@ -1,5 +1,5 @@
 const std = @import("std");
-const panic = @import("panic");
+const kpanic = @import("panic.zig");
 
 extern const __kernel_end: anyopaque;
 
@@ -49,7 +49,7 @@ pub const Arena = struct {
 
     pub fn allocUndead(self: *Arena, size: usize, alignment: usize) []u8 {
         return self.tryAllocUndead(size, alignment) catch |e| switch (e) {
-            error.OutOfMemory => panic.panic(
+            error.OutOfMemory => kpanic.panic(
                 "arena out of memory: need {d} bytes",
                 .{size},
             ),
@@ -67,7 +67,7 @@ fn vtableAlloc(
     const a = alignment.toByteUnits();
 
     const buf = self.tryAllocUndead(len, a) catch {
-        panic.panic("arena out of memory: need {d} bytes\n", .{len});
+        kpanic.panic("arena out of memory: need {d} bytes\n", .{len});
     };
     return buf.ptr;
 }

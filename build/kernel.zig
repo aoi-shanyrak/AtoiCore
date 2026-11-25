@@ -3,19 +3,11 @@ const config = @import("config.zig");
 
 pub fn createKernelModules(ctx: config.Context) *std.Build.Module {
     const drivers_mod = module(ctx, "src/drivers/drivers.zig", &.{});
-    const panic_mod = module(ctx, "src/kernel/panic.zig", &.{});
-    const x86_32_mod = module(ctx, "src/x86_32/x86_32.zig", &.{});
-
-    const memory_mod = module(ctx, "src/memory/memory.zig", &.{
-        .{ .name = "x86_32", .module = x86_32_mod },
-        .{ .name = "panic", .module = panic_mod },
-    });
+    const int_mod = module(ctx, "src/interrupt/interrupt.zig", &.{});
 
     return module(ctx, "src/kernel/main.zig", &.{
-        .{ .name = "x86_32", .module = x86_32_mod },
+        .{ .name = "interrupt", .module = int_mod },
         .{ .name = "drivers", .module = drivers_mod },
-        .{ .name = "memory", .module = memory_mod },
-        .{ .name = "panic", .module = panic_mod },
     });
 }
 

@@ -1,12 +1,12 @@
 const std = @import("std");
-const x86 = @import("x86_32");
-const panic = @import("panic");
+const interrupt = @import("interrupt");
+const panic = @import("panic.zig");
 const writer = @import("printer.zig");
 
-const pic = x86.pic;
+const pic = interrupt.pic;
 
-const Context = x86.Context;
-const InterruptVector = x86.InterruptVector;
+const Context = interrupt.Context;
+const InterruptVector = interrupt.InterruptVector;
 
 var timer_ticks: u32 = 0;
 

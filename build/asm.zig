@@ -1,6 +1,6 @@
 const std = @import("std");
 const cfg = @import("config.zig");
-const defs = @import("../src/x86_32/defs.zig");
+const defs = @import("../src/interrupt/defs.zig");
 
 pub fn addAssemblyObjects(b: *std.Build, exe: *std.Build.Step.Compile) void {
     const inc_files = b.addWriteFiles();

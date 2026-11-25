@@ -1,7 +1,7 @@
 const std = @import("std");
 
 pub const defs_inc_name = "defs.inc";
-pub const linker_script = "src/x86_32/boot/link.ld";
+pub const linker_script = "src/kernel/boot/link.ld";
 pub const mkimage_src = "build/mkimage.zig";
 
 pub const kernel_elf_name = "os.elf";
@@ -9,8 +9,8 @@ pub const bin_name = "os.bin";
 pub const img_name = "os.img";
 
 pub const asm_sources = [_][]const u8{
-    "src/x86_32/boot/loader.asm",
-    "src/x86_32/interrupts.asm",
+    "src/kernel/boot/loader.asm",
+    "src/interrupt/interrupts.asm",
 };
 
 pub const sector_size: usize = 512;
@@ -54,4 +54,5 @@ pub const qemu_args = [_][]const u8{
 pub const clean_dirs = [_][]const u8{
     "zig-out/",
     ".zig-cache/",
+    "build/boot.img",
 };

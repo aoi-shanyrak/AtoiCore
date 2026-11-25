@@ -1,12 +1,12 @@
 const std = @import("std");
-const x86 = @import("x86_32");
-const kpanic = @import("panic");
+const interrupt = @import("interrupt");
+const kpanic = @import("panic.zig");
 const printer = @import("printer.zig");
 
-const allocator_undead = @import("memory").arena;
+const allocator_undead = @import("arena.zig");
 
-const pic = x86.pic;
-const interrupts = x86.interrupts;
+const pic = interrupt.pic;
+const interrupts = interrupt.interrupts;
 
 comptime {
     _ = @import("handler.zig");
