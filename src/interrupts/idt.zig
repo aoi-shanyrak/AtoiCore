@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub const NUM_VECTORS: u32 = 256;
+pub const NUM_VECTORS = 256;
 
 const kernel_code_segment = @extern(*const anyopaque, .{ .name = "KERNEL_CODE_SEGMENT" });
 

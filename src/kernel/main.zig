@@ -8,51 +8,42 @@ const allocator_undead = @import("arena.zig");
 
 pub const panic = std.debug.FullPanic(kpanic.zigPanic);
 
+var kernel_arena: allocator_undead.Arena = undefined;
+
 export fn kernelEntry() callconv(.c) noreturn {
-    const alloc = kernelSetup();
-    _ = main(alloc);
-    kpanic.halt();
+    _ = kernelSetup();
+    main();
 }
 
-fn kernelSetup() std.mem.Allocator {
-    var kernel_arena: allocator_undead.Arena = undefined;
+fn kernelSetup() void {
     kernel_arena.init();
-    const alloc = kernel_arena.allocator();
+    const allocator = kernel_arena.allocator();
 
     printer.initPrinter();
     kpanic.setWriter(printer.getWriter());
 
-    interrupts.setup(alloc) catch unreachable;
+    interrupts.setup(allocator) catch unreachable;
 
     drivers.pit.init(100) catch unreachable;
+    drivers.ps2.init() catch unreachable;
+    drivers.keyboard.init(allocator) catch unreachable;
 
-    return alloc;
+    asm volatile ("sti");
 }
 
-fn main(_: std.mem.Allocator) i32 {
-    test_exception();
-    return 0;
-}
+fn main() noreturn {
+    const writer = printer.getWriter();
 
-const test_pattern = struct {
-    const eax = 0x00000001;
-    const ebx = 0x00000002;
-    const ecx = 0x00000003;
-    const edx = 0x00000004;
-};
+    while (true) {
+        while (drivers.keyboard.pollEvent()) |ev| {
+            if (!ev.pressed) continue;
 
-fn test_exception() noreturn {
-    const asm_code = comptime std.fmt.comptimePrint(
-        \\.intel_syntax noprefix
-        \\mov eax, 0x{x}
-        \\mov ebx, 0x{x}
-        \\mov ecx, 0x{x}
-        \\mov edx, 0x{x}
-        \\xor ecx, ecx      
-        \\div ecx           
-        \\.att_syntax prefix
-    , .{ test_pattern.eax, test_pattern.ebx, test_pattern.ecx, test_pattern.edx });
-
-    asm volatile (asm_code);
-    unreachable;
+            if (ev.char) |ch| {
+                writer.writeByte(ch) catch {};
+            } else {
+                writer.print("[{s}]", .{@tagName(ev.key)}) catch {};
+            }
+        }
+    }
+    asm volatile ("hlt");
 }

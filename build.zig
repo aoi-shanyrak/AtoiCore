@@ -20,6 +20,8 @@ pub fn build(b: *std.Build) void {
 
     const install = b.getInstallStep();
 
+    b.installArtifact(os_elf);
+
     const install_bin = b.addInstallFileWithDir(os_bin.getOutput(), .bin, config.bin_name);
     install.dependOn(&install_bin.step);
 

@@ -1,10 +1,10 @@
 const std = @import("std");
 const vga = @import("drivers").vga;
 
-const TOP: usize = 0;
-const BOTTOM: usize = vga.VGA_ROWS - 1;
-const LEFT: usize = 0;
-const RIGHT: usize = vga.VGA_COLUMNS - 1;
+const TOP = 0;
+const BOTTOM = vga.VGA_ROWS - 1;
+const LEFT = 0;
+const RIGHT = vga.VGA_COLUMNS - 1;
 
 const VgaWriter = struct {
     interface: std.Io.Writer,

@@ -41,7 +41,7 @@ const ControllerCmd = enum(u8) {
 
 const SELF_TEST_OK: u8 = 0x55;
 const PORT_TEST_OK: u8 = 0x00;
-const TIMEOUT_SPINS: usize = 100_000;
+const TIMEOUT_SPINS: usize = 10_000_000;
 
 pub const Error = error{
     Timeout,
@@ -57,7 +57,7 @@ pub fn init() Error!void {
     var cfg = try readConfig();
     cfg.irq1_enable = false;
     cfg.irq12_enable = false;
-    cfg.disabel_port1 = false;
+    cfg.disable_port1 = false;
     cfg.disable_port2 = true;
     cfg.translation = true;
     try writeConfig(cfg);
@@ -102,12 +102,12 @@ fn sendCommand(cmd: ControllerCmd) Error!void {
     io.outb(Port.command, @backingInt(cmd));
 }
 
-fn readData() CommandByte {
-    try waitOutputEmpty();
+pub fn readData() Error!u8 {
+    try waitOutputFull();
     return io.inb(Port.data);
 }
 
-fn writeData(data: u8) Error!void {
+pub fn writeData(data: u8) Error!void {
     try waitInputEmpty();
     io.outb(Port.data, data);
 }
@@ -119,9 +119,9 @@ fn waitInputEmpty() Error!void {
     return Error.Timeout;
 }
 
-fn waitOutputEmpty() Error!void {
+fn waitOutputFull() Error!void {
     for (0..TIMEOUT_SPINS) |_| {
-        if (!readStatus().output_full) return;
+        if (readStatus().output_full) return;
     }
     return Error.Timeout;
 }
@@ -130,7 +130,7 @@ fn readStatus() Status {
     return @bitCast(io.inb(Port.status));
 }
 
-fn flushOutputBuffer() void {
+pub fn flushOutputBuffer() void {
     while (readStatus().output_full) {
         _ = io.inb(Port.data);
     }

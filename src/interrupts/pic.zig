@@ -74,10 +74,9 @@ inline fn send(port: u16, val: u8) void {
     io.wait();
 }
 
-pub fn sendEOI(vec: u8) void {
+pub fn sendEOI(irq: u8) void {
     if (cur_cfg.aeoi) return;
 
-    const irq = vec - MASTER_VECTOR_OFFSET;
     if (irq >= LINES_PER_PIC)
         send(SLAVE_CMD_PORT, EOI);
     send(MASTER_CMD_PORT, EOI);
