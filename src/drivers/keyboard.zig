@@ -140,6 +140,7 @@ pub fn init(allocator: std.mem.Allocator) Error!void {
     try sendCommand(.enable_scanning);
 
     interrupts.handler.register(.keyboard, onKeyboardIRQ);
+    try ps2.enablePort1Irq();
     interrupts.pic.unmask(.keyboard);
 }
 
