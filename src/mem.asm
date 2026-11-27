@@ -1,17 +1,23 @@
-[BITS 32]
+bits 32
 
 section .text
 
 
-[GLOBAL memcpy]
+global memcpy
+global memmove
+global memset
+global memzero
+global memcmp
+
+
 memcpy:
     push edi
     push esi
     push edi            
 
-    mov edi, [esp + 16] ; dst
-    mov esi, [esp + 20] ; src
-    mov ecx, [esp + 24] ; n
+    mov edi, [esp + 16] 
+    mov esi, [esp + 20] 
+    mov ecx, [esp + 24]
 
     rep movsb
 
@@ -21,7 +27,6 @@ memcpy:
     ret
 
 
-[GLOBAL memmove]
 memmove:
     push edi
     push esi
@@ -51,7 +56,6 @@ memmove:
     ret
 
 
-[GLOBAL memset]
 memset:
     push edi
     
@@ -65,7 +69,6 @@ memset:
     ret
 
 
-[GLOBAL memzero]
 memzero:
     push dword 0
     push dword [esp + 8]
@@ -75,7 +78,6 @@ memzero:
     ret
 
 
-[GLOBAL memcmp]
 memcmp:
     push edi
     push esi

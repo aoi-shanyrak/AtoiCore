@@ -6,8 +6,10 @@ const src_dir = "src";
 
 const kernel_zig = "main.zig";
 const linker_script = "link.ld";
+
 const asm_sources = [_][]const u8{
     "loader.asm",
+    "interrupts.asm",
     "mem.asm",
 };
 

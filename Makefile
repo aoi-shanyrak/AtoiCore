@@ -18,9 +18,9 @@ $(IMAGE): $(PAYLOAD)
 
 run: OPTIMIZE = ReleaseSmall
 run: $(IMAGE)
-	qemu-system-i386 -cpu pentium2 -m 1g \
+	qemu-system-i386 -cpu pentium2 -m 1g -no-reboot \
 	    -drive file=$(IMAGE),format=raw,if=floppy \
-	    -monitor stdio -device VGA
+	    -monitor stdio -device VGA 
 
 debug: OPTIMIZE = Debug
 debug: $(IMAGE)
