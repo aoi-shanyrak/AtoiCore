@@ -66,10 +66,14 @@ pub fn init() Error!void {
     try testPort1();
 
     try sendCommand(.enable_port1);
-    cfg.irq1_enable = true;
-    try writeConfig(cfg);
 
     flushOutputBuffer();
+}
+
+pub fn enablePort1Irq() Error!void {
+    var cfg = try readConfig();
+    cfg.irq1_enable = true;
+    try writeConfig(cfg);
 }
 
 fn runSelfTest(saved_cfg: CommandByte) Error!void {
