@@ -17,12 +17,8 @@ pub const HandlerTable = struct {
         return self;
     }
 
-    pub fn register(self: *HandlerTable, vec: InterruptVector, handler: HandlerFn) void {
+    pub fn register(self: *HandlerTable, vec: InterruptVector, handler: ?HandlerFn) void {
         self.entries[@backingInt(vec)] = handler;
-    }
-
-    pub fn unregister(self: *HandlerTable, vec: InterruptVector) void {
-        self.entries[@backingInt(vec)] = null;
     }
 
     pub fn get(self: *HandlerTable, vec: InterruptVector) ?HandlerFn {
@@ -36,15 +32,9 @@ pub fn init(alloc: std.mem.Allocator) !void {
     table = try HandlerTable.init(alloc);
 }
 
-pub fn register(vec: InterruptVector, handler: HandlerFn) void {
+pub fn register(vec: InterruptVector, handler: ?HandlerFn) void {
     if (table) |t| {
         t.register(vec, handler);
-    }
-}
-
-pub fn unregister(vec: InterruptVector) void {
-    if (table) |t| {
-        t.unregister(vec);
     }
 }
 
@@ -63,7 +53,9 @@ export fn universal_handler(ctx: *Context) callconv(.c) void {
     }
 
     if (panic.beginPanic()) |w| {
-        const int_name = vector.mnemonic() orelse "ERR";
+        var name_buf: [4]u8 = undefined;
+        const int_name = vector.mnemonic() orelse
+            (std.fmt.bufPrint(&name_buf, "#{d}", .{vec}) catch "ERR");
 
         w.print(
             \\unhandled interrupt {s} at 0x{x:0>4}:0x{x:0>8}

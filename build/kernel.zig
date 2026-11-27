@@ -15,10 +15,22 @@ pub fn createKernelModules(ctx: config.Context) *std.Build.Module {
         .{ .name = "interrupts", .module = int_mod },
     });
 
-    return module(ctx, "src/kernel/main.zig", &.{
-        .{ .name = "panic", .module = panic_mod },
+    const print_mod = module(ctx, "src/kernel/printer.zig", &.{
+        .{ .name = "drivers", .module = drivers_mod },
+    });
+
+    const exp_mod = module(ctx, "src/kernel/experiments.zig", &.{
+        .{ .name = "printer", .module = print_mod },
         .{ .name = "drivers", .module = drivers_mod },
         .{ .name = "interrupts", .module = int_mod },
+    });
+
+    return module(ctx, "src/kernel/main.zig", &.{
+        .{ .name = "panic", .module = panic_mod },
+        .{ .name = "printer", .module = print_mod },
+        .{ .name = "drivers", .module = drivers_mod },
+        .{ .name = "interrupts", .module = int_mod },
+        .{ .name = "experiments", .module = exp_mod },
     });
 }
 
