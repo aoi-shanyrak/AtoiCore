@@ -8,8 +8,9 @@ pub fn setWriter(w: *std.Io.Writer) void {
 }
 
 fn endless_loop() noreturn {
-    asm volatile ("1: jmp 1b");
-    unreachable;
+    while (true) {
+        asm volatile ("");
+    }
 }
 
 pub fn halt() noreturn {

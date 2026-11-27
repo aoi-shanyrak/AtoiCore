@@ -8,16 +8,21 @@ const std = @import("std");
 const idt = @import("idt.zig");
 const trampolines = @import("trampolines.zig");
 
-pub fn setup(allocator: std.mem.Allocator) !void {
+pub const SetupConfig = struct {
+    aeoi: bool = false,
+    force_trap: bool = false,
+};
+
+pub fn setup(allocator: std.mem.Allocator, cfg: SetupConfig) !void {
     try handler.init(allocator);
 
     const tramps = try trampolines.Trampolines.init(allocator);
     const idt_ptr = try allocator.create(idt.Idt);
 
     for (0..idt.NUM_VECTORS) |i| {
-        idt_ptr.setGate(@intCast(i), tramps.vectorAddr(i));
+        idt_ptr.setGate(@intCast(i), tramps.vectorAddr(i), cfg.force_trap);
     }
     idt_ptr.load();
 
-    pic.init(.{});
+    pic.init(.{ .aeoi = cfg.aeoi });
 }

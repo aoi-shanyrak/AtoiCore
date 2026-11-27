@@ -1,10 +1,12 @@
 const std = @import("std");
+const interruptVector = @import("interruptVector.zig");
 
 pub const NUM_VECTORS = 256;
 
 const kernel_code_segment = @extern(*const anyopaque, .{ .name = "KERNEL_CODE_SEGMENT" });
 
-const InterruptVector = @import("interruptVector.zig").InterruptVector;
+const GateType = interruptVector.GateType;
+const InterruptVector = interruptVector.InterruptVector;
 
 const IdtGate = packed struct(u64) {
     offset_low: u16,
@@ -26,13 +28,13 @@ const IdtPtr = packed struct {
 pub const Idt = struct {
     entries: [NUM_VECTORS]IdtGate align(16),
 
-    pub fn setGate(self: *Idt, vec: u8, handler_addr: usize) void {
+    pub fn setGate(self: *Idt, vec: u8, handler_addr: usize, force_trap: bool) void {
         const vector: InterruptVector = @fromBackingInt(@intCast(vec));
         self.entries[vec] = .{
             .offset_low = @truncate(handler_addr),
             .segment_selector = @truncate(@intFromPtr(kernel_code_segment)),
             .zero1 = 0,
-            .type = @backingInt(vector.gateType()),
+            .type = @backingInt(if (force_trap) .trap else vector.gateType()),
             .D = 1,
             .zero2 = 0,
             .dpl = 0,

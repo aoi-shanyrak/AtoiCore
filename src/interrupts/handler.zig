@@ -21,6 +21,10 @@ pub const HandlerTable = struct {
         self.entries[@backingInt(vec)] = handler;
     }
 
+    pub fn unregister(self: *HandlerTable, vec: InterruptVector) void {
+        self.entries[@backingInt(vec)] = null;
+    }
+
     pub fn get(self: *HandlerTable, vec: InterruptVector) ?HandlerFn {
         return self.entries[@backingInt(vec)];
     }
@@ -35,6 +39,12 @@ pub fn init(alloc: std.mem.Allocator) !void {
 pub fn register(vec: InterruptVector, handler: HandlerFn) void {
     if (table) |t| {
         t.register(vec, handler);
+    }
+}
+
+pub fn unregister(vec: InterruptVector) void {
+    if (table) |t| {
+        t.unregister(vec);
     }
 }
 

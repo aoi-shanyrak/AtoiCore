@@ -1,6 +1,6 @@
 const pic = @import("pic.zig");
 
-const GateType = enum(u3) {
+pub const GateType = enum(u3) {
     interrupt = 0b110,
     trap = 0b111,
 };

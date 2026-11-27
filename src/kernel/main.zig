@@ -40,8 +40,6 @@ fn main() noreturn {
 
             if (ev.char) |ch| {
                 writer.writeByte(ch) catch {};
-            } else {
-                writer.print("[{s}]", .{@tagName(ev.key)}) catch {};
             }
         }
     }
