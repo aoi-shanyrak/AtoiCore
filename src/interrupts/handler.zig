@@ -58,7 +58,9 @@ fn onUnhandledInterrupt(vector: InterruptVector, ctx: *Context) void {
     @branchHint(.cold);
     const vec = @backingInt(vector);
     if (panic.beginPanic()) |w| {
-        const int_name = vector.mnemonic() orelse "ERR";
+        var name_buf: [4]u8 = undefined;
+        const int_name = vector.mnemonic() orelse
+            (std.fmt.bufPrint(&name_buf, "#{d}", .{vec}) catch "ERR");
 
         w.print(
             \\unhandled interrupt {s} at 0x{x:0>4}:0x{x:0>8}
