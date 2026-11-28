@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const InterruptVector = @import("interruptVector.zig").InterruptVector;
 
 const NUM_VECTORS = @import("idt.zig").NUM_VECTORS;
@@ -22,31 +23,47 @@ const Opcode = enum(u8) {
 extern fn collect_ctx() void;
 extern fn collect_ctx_noerr() void;
 
-var ctx_addr: usize = undefined;
-var ctx_addr_noerr: usize = undefined;
+pub const Trampolines = struct {
+    buffer: *[TRAMPOLINES_SIZE]u8,
 
-fn initHandlers() void {
-    ctx_addr = @intFromPtr(&collect_ctx);
-    ctx_addr_noerr = @intFromPtr(&collect_ctx_noerr);
-}
+    pub fn init(allocator: std.mem.Allocator) !Trampolines {
+        const buf = try allocator.create([TRAMPOLINES_SIZE]u8);
 
-pub fn genTrampolines(buffer: *[TRAMPOLINES_SIZE]u8) !void {
-    initHandlers();
+        var writer = std.Io.Writer.fixed(buf);
+        try emitTrampolines(
+            &writer,
+            @intFromPtr(buf),
+            @intFromPtr(&collect_ctx),
+            @intFromPtr(&collect_ctx_noerr),
+        );
+        return .{ .buffer = buf };
+    }
 
-    var writer = std.Io.Writer.fixed(buffer[0..]);
-    const base = @intFromPtr(buffer);
+    pub fn vectorAddr(self: Trampolines, vec: usize) usize {
+        const base = @intFromPtr(self.buffer);
+        const k = vec / STUB_INTERVAL;
+        return base + 2 * JMP_REL32_SIZE + k * JMP_REL32_SIZE + vec * VECTOR_TRAMP_SIZE;
+    }
+};
 
+pub fn emitTrampolines(
+    writer: *std.Io.Writer,
+    base: usize,
+    err_target: usize,
+    noerr_target: usize,
+) !void {
     const err_stub_addr = base;
-    try writeJmpRel32(&writer, err_stub_addr, ctx_addr);
+    try writeJmpRel32(writer, err_stub_addr, err_target);
+
     var last_noerr_stub_addr = base + writer.end;
-    try writeJmpRel32(&writer, last_noerr_stub_addr, ctx_addr_noerr);
+    try writeJmpRel32(writer, last_noerr_stub_addr, noerr_target);
 
     for (0..NUM_VECTORS) |i| {
         const vec: u8 = @intCast(i);
 
         if (i != 0 and i % STUB_INTERVAL == 0) {
             last_noerr_stub_addr = base + writer.end;
-            try writeJmpRel32(&writer, base, ctx_addr_noerr);
+            try writeJmpRel32(writer, base, noerr_target);
         }
         try writer.writeByte(@backingInt(Opcode.push_imm8));
         try writer.writeByte(vec);
@@ -55,9 +72,8 @@ pub fn genTrampolines(buffer: *[TRAMPOLINES_SIZE]u8) !void {
             err_stub_addr
         else
             last_noerr_stub_addr;
-        try writeJmpRel8(&writer, base, target);
+        try writeJmpRel8(writer, base, target);
     }
-    std.debug.assert(writer.end == TRAMPOLINES_SIZE);
 }
 
 fn writeJmpRel32(writer: *std.Io.Writer, addr: usize, target: usize) !void {
@@ -86,7 +102,12 @@ fn getRel8(from: usize, to: usize) i8 {
     return @intCast(diff);
 }
 
-pub fn vectorAddr(base: usize, vec: usize) usize {
-    const k = vec / STUB_INTERVAL;
-    return base + 2 * JMP_REL32_SIZE + k * JMP_REL32_SIZE + vec * VECTOR_TRAMP_SIZE;
+comptime {
+    @setEvalBranchQuota(10_000);
+    var dummy: [TRAMPOLINES_SIZE]u8 = undefined;
+    var writer = std.Io.Writer.fixed(&dummy);
+    emitTrampolines(&writer, 0x1000, 0x2000, 0x3000) catch @compileError("trampoline buffer overflow");
+    if (writer.end != TRAMPOLINES_SIZE) {
+        @compileError("TRAMPOLINES_SIZE mismatch");
+    }
 }
