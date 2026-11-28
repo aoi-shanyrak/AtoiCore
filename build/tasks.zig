@@ -5,7 +5,7 @@ pub fn addRunStep(b: *std.Build, install: *std.Build.Step, img_path: std.Build.L
     const run_step = b.step("run", "Build and run in QEMU (ReleaseSmall)");
     const qemu = b.addSystemCommand(&.{cfg.qemu_bin});
     qemu.addArgs(&cfg.qemu_args);
-    qemu.addFileArg(img_path);
+    qemu.addPrefixedFileArg(cfg.qemu_drive_prefix, img_path);
 
     qemu.step.dependOn(install);
     run_step.dependOn(&qemu.step);

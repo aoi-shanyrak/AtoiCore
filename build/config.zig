@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub const defs_inc_name = "defs.inc";
 pub const linker_script = "src/kernel/boot/link.ld";
@@ -37,6 +38,7 @@ pub const Context = struct {
 };
 
 pub const qemu_bin = "qemu-system-i386";
+pub const qemu_drive_prefix = "format=raw,if=floppy,file=";
 
 pub const qemu_args = [_][]const u8{
     "-cpu",
@@ -48,7 +50,14 @@ pub const qemu_args = [_][]const u8{
     "stdio",
     "-device",
     "VGA",
-    "-fda",
+    "-display",
+    display_arg,
+    "-drive",
+};
+
+const display_arg = switch (builtin.os.tag) {
+    .macos => "cocoa,zoom-to-fit=on",
+    else => "default",
 };
 
 pub const clean_dirs = [_][]const u8{
