@@ -8,8 +8,6 @@ const MIN_DIVISOR: u32 = 2;
 const MAX_DIVISOR: u32 = std.math.maxInt(u16) + 1;
 const MAX_DIVISOR_HW_VALUE: u16 = 0;
 
-var ticks: u32 = 0;
-
 const Port = enum(u16) {
     channel0 = 0x40,
     channel1 = 0x41,
@@ -79,10 +77,12 @@ pub fn init(freq_hz: u32) Error!void {
     interrupts.pic.unmask(.timer);
 }
 
+var ticks = std.atomic.Value(u32).init(0);
+
 fn onTimerIRQ(_: *interrupts.Context) void {
-    ticks += 1;
+    _ = ticks.fetchAdd(1, .monotonic);
 }
 
 pub fn getTicks() u32 {
-    return ticks;
+    return ticks.load(.monotonic);
 }
