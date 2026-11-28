@@ -55,7 +55,12 @@ export fn universal_handler(ctx: *Context) callconv(.c) void {
             return;
         }
     }
+    @call(.never_inline, onUnhandledInterrupt, .{ vector, ctx });
+}
 
+fn onUnhandledInterrupt(vector: InterruptVector, ctx: *Context) void {
+    @branchHint(.cold);
+    const vec = @backingInt(vector);
     if (panic.beginPanic()) |w| {
         var name_buf: [4]u8 = undefined;
         const int_name = vector.mnemonic() orelse
