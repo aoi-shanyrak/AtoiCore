@@ -27,8 +27,10 @@ pub const HandlerTable = struct {
 };
 
 var table: ?*HandlerTable = null;
+var should_send_eoi: bool = true;
 
-pub fn init(alloc: std.mem.Allocator) !void {
+pub fn init(alloc: std.mem.Allocator, should_eoi: bool) !void {
+    should_send_eoi = should_eoi;
     table = try HandlerTable.init(alloc);
 }
 
@@ -45,8 +47,10 @@ export fn universal_handler(ctx: *Context) callconv(.c) void {
     if (table) |t| {
         if (t.get(vector)) |handler| {
             handler(ctx);
-            if (vector.toPicIrq()) |irq| {
-                pic.sendEOI(@backingInt(irq));
+            if (should_send_eoi) {
+                if (vector.toPicIrq()) |irq| {
+                    pic.sendEOI(@backingInt(irq));
+                }
             }
             return;
         }
@@ -65,7 +69,7 @@ export fn universal_handler(ctx: *Context) callconv(.c) void {
             int_name,
             ctx.cs,
             ctx.eip,
-            ctx.*,
+            ctx,
         }) catch {};
     }
     panic.halt();

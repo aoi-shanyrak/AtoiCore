@@ -14,7 +14,7 @@ var kernel_arena: allocator_undead.Arena = undefined;
 export fn kernelEntry() callconv(.c) noreturn {
     const allocator = kernelSetup();
 
-    experiments.run(allocator, .exp3_keyboard_panic);
+    experiments.run(allocator, .exp9_nested_irq_overflow);
 }
 
 fn kernelSetup() std.mem.Allocator {

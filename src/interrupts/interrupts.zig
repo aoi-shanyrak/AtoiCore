@@ -8,13 +8,14 @@ const std = @import("std");
 const idt = @import("idt.zig");
 const trampolines = @import("trampolines.zig");
 
-pub const SetupConfig = struct {
+const SetupConfig = struct {
     aeoi: bool = false,
     force_trap: bool = false,
+    should_send_eoi: bool = true,
 };
 
 pub fn setup(allocator: std.mem.Allocator, cfg: SetupConfig) !void {
-    try handler.init(allocator);
+    try handler.init(allocator, cfg.should_send_eoi);
 
     const tramps = try trampolines.Trampolines.init(allocator);
     const idt_ptr = try allocator.create(idt.Idt);
