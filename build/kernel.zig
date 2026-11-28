@@ -1,7 +1,20 @@
 const std = @import("std");
+const @"asm" = @import("asm.zig");
 const config = @import("config.zig");
 
-pub fn createKernelModules(ctx: config.Context) *std.Build.Module {
+pub fn buildKernel(ctx: config.Context) *std.Build.Step.Compile {
+    const kernel_mod = createKernelModules(ctx);
+    const os_elf = ctx.b.addExecutable(.{
+        .name = config.kernel_elf_name,
+        .root_module = kernel_mod,
+    });
+    os_elf.entry = .disabled;
+    os_elf.setLinkerScript(ctx.b.path(config.linker_script));
+    @"asm".addAssemblyObjects(ctx.b, os_elf);
+    return os_elf;
+}
+
+fn createKernelModules(ctx: config.Context) *std.Build.Module {
     const io_mod = module(ctx, "src/interrupts/io.zig", &.{});
     const panic_mod = module(ctx, "src/kernel/panic.zig", &.{});
 
@@ -44,16 +57,7 @@ fn module(
         .target = ctx.target,
         .optimize = ctx.optimize,
         .code_model = .kernel,
+        .strip = ctx.strip,
         .imports = imports,
     });
-}
-
-pub fn addKernelElf(b: *std.Build, kernel_mod: *std.Build.Module) *std.Build.Step.Compile {
-    const os_elf = b.addExecutable(.{
-        .name = config.kernel_elf_name,
-        .root_module = kernel_mod,
-    });
-    os_elf.entry = .disabled;
-    os_elf.setLinkerScript(b.path(config.linker_script));
-    return os_elf;
 }

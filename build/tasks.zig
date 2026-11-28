@@ -19,3 +19,13 @@ pub fn addCleanStep(b: *std.Build) void {
     rm.addArgs(&cfg.clean_dirs);
     clean_step.dependOn(&rm.step);
 }
+
+pub fn addAsmDumpStep(b: *std.Build, kernel_mod: *std.Build.Module) void {
+    const dump_step = b.step("asm", "Emit ReleaseSmall assembly via Zig compiler");
+    const asm_obj = b.addObject(.{
+        .name = "kernel_asm",
+        .root_module = kernel_mod,
+    });
+    const asm_file = asm_obj.getEmittedAsm();
+    dump_step.dependOn(&b.addInstallFileWithDir(asm_file, .prefix, "kernel.dis.asm").step);
+}
