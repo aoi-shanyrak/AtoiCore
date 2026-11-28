@@ -22,11 +22,13 @@ pub const Context = struct {
     b: *std.Build,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
+    strip: bool,
 
     pub fn init(b: *std.Build) Context {
         return .{
             .b = b,
-            .optimize = b.standardOptimizeOption(.{}),
+            .strip = false,
+            .optimize = .ReleaseSmall,
             .target = b.resolveTargetQuery(.{
                 .cpu_arch = .x86,
                 .os_tag = .freestanding,

@@ -65,7 +65,7 @@ pub const Context = extern struct {
     eflags: Eflags,
 
     pub fn format(
-        self: Context,
+        self: *const Context,
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
         try writer.print(
